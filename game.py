@@ -5,6 +5,7 @@ from typing import Protocol
 from cardgame import Card
 from Blackjack import BlackJackGame
 from Showhand import ShowHandGame
+import customtkinter
 
 
 
@@ -41,24 +42,37 @@ class MainPage(Frame):
         Frame.__init__(self, parent,*args, **kwargs)
         self.config(width=1024,height=720,bg="green")
 
-        label = Label(self, text="Poker Game",font=("courier", 40,"bold"),bg="green")
-        label.pack(padx=10, pady=10,expand=True)
-
+        title_frame=Canvas(self,bg="green",width=500,height=400,bd=0,highlightthickness=0)
+        title_frame.pack(padx=10,pady=40,)
+        button_frame=Frame(self,bg="green",width=500,height=240)
+        button_frame.pack()
+        button_frame.pack_propagate(False)
+        
+        card_img=Image.open("index.png")
+        card_resize_img=card_img.resize((350,280))
+        self.image = ImageTk.PhotoImage(card_resize_img)
+        
+        #title_frame.create_image(150, 150, image=self.image)  
+        label = Label(title_frame, text="Poker Game",font=("courier", 40,"bold"),bg="green")
+        label.pack(expand=True)
+        title_label = Label(title_frame,image=self.image,bg="green")
+        title_label.pack()
+        
         # We use the switch_window_button in order to call the show_frame() method as a lambda function
         showhand_button = Button(
-            self,
+            button_frame,
             text="Go to the Showhand",
             command=lambda: parent.show_frame(ShowHandGame),
             width=30,
         )
-        showhand_button.pack(pady=20,)
+        showhand_button.pack(expand=True)
         blackjack_button = Button(
-            self,
+            button_frame,
             text="Go to the Blackjack",
             command=lambda: parent.show_frame(PageOne),
             width=30,
         )
-        blackjack_button.pack(pady=20,expand=True)
+        blackjack_button.pack(expand=True)
 
 
 class PageOne(BlackJackGame):

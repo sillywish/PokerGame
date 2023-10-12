@@ -5,6 +5,7 @@ from enum import Enum,auto
 from copy import deepcopy
 from typing import Any,Optional
 from tkinter import Label
+from customwidget import CardLabel
 
 
 class Card:
@@ -103,7 +104,7 @@ class Player:
         self.name:str=name
         self.category:str="Unkonw"
         self.cards_img:dict={}
-        self.cards_labels: list[Label]=[]
+        self.cards_labels: list[CardLabel]=[]
         #self.values: list[int]=[]
 
     def __repr__(self) -> str:
@@ -590,8 +591,11 @@ def random_generate_card() ->Card:
         symbol=name[0]+symbol
     else:
         symbol=str(value)+symbol
- 
-    return Card(suit,value,name,symbol)
+    
+    card=Card(suit,value,name,symbol)
+    # if random.randint(0,1):
+    #     card.show=False
+    return card
 
 
 #*********************************
