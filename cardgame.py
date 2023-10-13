@@ -5,7 +5,6 @@ from enum import Enum,auto
 from copy import deepcopy
 from typing import Any,Optional
 from tkinter import Label
-from customwidget import CardLabel
 
 
 class Card:
@@ -82,7 +81,7 @@ class Deck:
                 
                 self.cards.append(card)
       
-    def shuffle(self):
+    def shuffle(self) -> None:
         random.shuffle(self.cards)
         
 
@@ -121,7 +120,7 @@ class Player:
         self.category = "Unkonw"
 
 
-    def sortedcards(self) -> list[Card]:
+    def _sortedcards(self) -> list[Card]:
         sorted_cards=[]
         temp_cards=deepcopy(self.cards)
         
@@ -137,6 +136,22 @@ class Player:
 
         return sorted_cards   
   
+    #bubble_sort
+    def sortedcards(self) ->None:
+        length = len(self.cards)
+        
+        if length < 1:
+            return
+        
+        for i in range(length):
+            is_swap = False
+            for j in range(length - i -1):
+                if self.cards[j].value > self.cards[j+1].value:
+                    self.cards[j], self.cards[j+1] = self.cards[j+1], self.cards[j]
+                    is_swap=True
+            if not is_swap:
+                break
+                    
 class PokerScore:
     """Hand-ranking categories that differ by suit alone"""
     def __init__(self,cards:list[Card]) -> None:
@@ -313,7 +328,17 @@ class PokerGameState(Enum):
     PLAYING = auto()
     FINSIHED = auto()
     RESTART = auto()
-    
+
+class CardLabel(Label):
+    def __init__(self,parent,card,position,*args, **kwargs):
+        Label.__init__(self,parent,*args, **kwargs)
+        self.state: CardState = CardState.NORMAL
+        self.card: Card =card
+        self.position : int = position
+           
+class CardState(Enum):
+    NORMAL = auto()
+    PICK = auto()      
     
     
 
@@ -505,7 +530,7 @@ def find_winner_simple(playerlist:list[Player])->tuple[Player,list[tuple[Player,
     ranklist:list[tuple[Player,Any]]=[]
     for player in playerlist:
         player.cards[0].show=True
-        player.cards=player.sortedcards()
+        player.sortedcards()
         score=PokerScore(player.cards)
         rank=score.get_score()
         player.category=score.category
@@ -644,7 +669,12 @@ if __name__ == "__main__":
     
     
     a=Player()
-    card=random_generate_card()
+    #card=random_generate_card()
+    for _ in range(5):
+        a.cards.append(random_generate_card())
+    print(a.cards)
+    a.sort()
+    print(a.cards)
 
     #card=Card(suit='hearts',value=14),
     # a=[(2, 4), (1, 14), (1, 8), (1, 5)]
