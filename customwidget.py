@@ -7,6 +7,8 @@ from PIL import Image, ImageTk
 from cardgame import *
 from copy import deepcopy
 
+from cardgame import Card, Player
+
 @dataclass
 class FrameSize:
     frame_width: int 
@@ -75,23 +77,41 @@ class PlayerFrame(Frame):
         self.pack_propagate(False)
         self.title_label = Label(self,text=self.player.name,font=self.SIZE.title_font,bg="green")
         self.title_label.pack(pady=5)
-        self.card_frame=Frame(self,
+        self.card_frame=Canvas(self,
                               width=self.SIZE.card_frame_width,
                               height=self.SIZE.frame_height,
                               bg=self.SIZE.card_frame_bg,
                               bd=0,)      
         #self.card_frame=Frame(self,width=800,height=240,bd=0,bg="red")
         self.card_frame.pack()
+        
+        #create_cardback
+        
+        #self.card_frame.winfo_containing
     
+    def create_card_back(self):
+        card_back_img=Image.open("cards/cardback.png")
+        card_back_img=card_back_img.resize((150,218))
+        card_img = ImageTk.PhotoImage(card_back_img)
+        self.player.cards_img["card"] = card_img
     #使用pack()部署卡片图片使用于简单的游戏规则  
     def create_cardimg_label(self,card:Card,flag:bool=True):
-        card_img = ImageTk.PhotoImage(self.resize_cards(card))
-        self.player.cards_img[card.symbol] = card_img
+        
+        if "card" not in self.player.cards_img:
+            self.create_card_back()
+        if card.symbol not in self.player.cards_img:
+            card_img = ImageTk.PhotoImage(self.resize_cards(card))
+            self.player.cards_img[card.symbol] = card_img
+        else:
+            card_img = self.player.cards_img[card.symbol]
+        # card_img = ImageTk.PhotoImage(self.resize_cards(card))
+        # self.player.cards_img[card.symbol] = card_img
         if not card.show:
-            card_back_img=Image.open("cards/cardback.png")
-            card_back_img=card_back_img.resize((150,218))
-            card_img = ImageTk.PhotoImage(card_back_img)
-            self.player.cards_img["card"] = card_img
+            card_img = self.player.cards_img["card"] 
+            # card_back_img=Image.open("cards/cardback.png")
+            # card_back_img=card_back_img.resize((150,218))
+            # card_img = ImageTk.PhotoImage(card_back_img)
+            # self.player.cards_img["card"] = card_img
             
         # imglabel=Label(self.card_frame,image=card_img,bg="green")
         position = len(self.player.cards)-1
@@ -103,7 +123,10 @@ class PlayerFrame(Frame):
     
     #使用place()部署卡片图片使用于复杂的游戏规则          
     def _create_cardimg_label(self,card:Card,flag:bool=True):
+        """使用place()部署卡片图片使用于复杂的游戏规则 """
         
+        if "card" not in self.player.cards_img:
+            self.create_card_back()        
         #if img is not exsit then create one
         if card.symbol not in self.player.cards_img:
             card_img = ImageTk.PhotoImage(self.resize_cards(card))
@@ -113,10 +136,7 @@ class PlayerFrame(Frame):
         
         # create the back img      
         if not card.show:
-            card_back_img=Image.open("cards/cardback.png")
-            card_back_img=card_back_img.resize((150,218))
-            card_img = ImageTk.PhotoImage(card_back_img)
-            self.player.cards_img["card"] = card_img
+            card_img = self.player.cards_img["card"] 
             
         position = len(self.player.cards)-1
         imglabel=CardLabel(self.card_frame,card=card,position=position,image=card_img,)
@@ -175,6 +195,7 @@ class PlayerFrame(Frame):
     def sort_imglabel(self):
         """sorted player cards
         """
+        print("sorted cards")
         self.player.sortedcards()
         player_sortedcards=deepcopy(self.player.cards)
         position=0
@@ -243,7 +264,7 @@ class PlayerFrame(Frame):
         self.picked_cards.clear()
         
         
-        print(self.player.cards)
+        #print(self.player.cards)
 
         
         
@@ -252,19 +273,149 @@ class PlayerFrame(Frame):
         
         print(cards_list)
         return cards_list
-          
+
+class RummyDeck(Deck):
+    
+    def __init__(self) -> None:
+        super().__init__()
+        self.cards_img:dict={}
+        self.img_labels : list[CardLabel]=[]
+        #self.discard_label : list[CardLabel]=[]
+
+class DeckFrame(Frame):
+    def __init__(self, parent,size=DEFAULT_SIZE):
+        Frame.__init__(self, parent)
+        self.parent = parent
+        self.deck = RummyDeck()
+        self.SIZE = size
+        self.current_player: PlayerFrame =None
+        self.picked_cards=[]
+        self.topcard_position=None
+        self.config(width=self.SIZE.frame_width,
+                    height=self.SIZE.frame_height,
+                    bg=self.SIZE.frame_bg,)
+        self.pack(pady=10)
+        self.pack_propagate(False)
+        self.stock = Frame(self,width=400,height=300,bg="red")
+        self.stock.pack(side=LEFT)
+        self.discard_pile = Frame(self,width=400,height=300,bg="black")
+        self.discard_pile.pack(side=LEFT)
+    
+    def create_deck(self) -> None:
+        
+        self.create_discard_label(self.deck.cards[0])
+        for card in self.deck.cards[1:]:
+            self.create_cardimg_label(card)
             
+    def create_card_back(self):
+        card_back_img=Image.open("cards/cardback.png")
+        card_back_img=card_back_img.resize((150,218))
+        card_img = ImageTk.PhotoImage(card_back_img)
+        self.deck.cards_img["card"] = card_img
+                  
+    def resize_cards(self,card:Card):
+        filename=f"cards/{card.img_name}"
+        card_img=Image.open(filename)
+        #card_resize_img=card_img.resize((150,218))
+        card_resize_img=card_img.resize(self.SIZE.card_size) 
+        return card_resize_img     
+    
+    def create_cardimg_label(self, card: Card):
+        if "card" not in self.deck.cards_img:
+            self.create_card_back()        
+         
+        card_img = self.deck.cards_img["card"]
+           
+        position = len(self.deck.img_labels)
+        self.topcard_position = position
+        imglabel=CardLabel(self.stock,card=card,position=position,image=card_img,)
+        imglabel.place(x=-75,y=30,relx=0.5)
+        
+        #if flag is true add event when click img can flip over
+        # if not card.show and flag:
+        #     imglabel.bind("<Button-1>",lambda event : self._display_card(event))
+        imglabel.bind("<Button-1>",lambda event : self.deal_card(event))
+        self.deck.img_labels.append(imglabel)
+     
+    def create_discard_label(self,card:Card):
+                #if img is not exsit then create one
+        if card.symbol not in self.deck.cards_img:
+            card_img = ImageTk.PhotoImage(self.resize_cards(card))
+            self.deck.cards_img[card.symbol] = card_img
+        else:
+            card_img = self.deck.cards_img[card.symbol]
+            
+        position = len(self.deck.img_labels)
+        imglabel=CardLabel(self.discard_pile,card=card,position=position,image=card_img,)
+        imglabel.place(x=-75,y=30,relx=0.5)
+        imglabel.bind("<Button-1>",lambda event : self.deal_card(event))
+        self.deck.img_labels.append(imglabel)
+          
+     
+            
+    def deal_card(self,event) -> None:
+        widget = event.widget
+        #print(widget)
+        print(widget.position)
+        #print(widget.card)
+        position = widget.position
+        if not self.current_player:
+            return
+        #print(self.deck.img_labels)
+        card=self.deck.cards.pop(position)
+        for label in self.deck.img_labels[position:]:
+            label.position-=1
+        self.deck.img_labels.pop(position)
+        #print(len(self.stock.children))
+        #print(len(player.cards_labels))
+        
+        widget.destroy()
+        print(card)     
+        self.current_player._add_card(card)
+        self.current_player.sort_imglabel()
+        # self.create_cardimg_label(card,self.discard_pile)
+        # for label in self.deck.img_labels:
+        #     print(label.position)
+        #print(len(self.stock.children))
+        #print(len(player.cards_labels))
+    
+    def _deal_card(self) -> Card:
+        widget = self.deck.img_labels[self.topcard_position]
+        #print(widget)
+        print(widget.position)
+        if not self.current_player:
+            return
+        print(self.deck.img_labels)
+        card=self.deck.cards.pop(self.topcard_position)
+        for label in self.deck.img_labels[self.topcard_position:]:
+            label.position-=1
+        self.deck.img_labels.pop(self.topcard_position)
+        self.topcard_position-=1
+        #print(len(self.stock.children))
+        #print(len(player.cards_labels))
+        
+        widget.destroy()
+        
+        
+        return card
+    
+    
+    def pass_to_discard(self,card:Card):
+        self.create_cardimg_label
+              
 if __name__ == "__main__":
     root=Tk()
-    player=Player("Computer") 
-    board=PlayerFrame(root,player,size=SM_SIZE)
+    player=Player("Computer")
+    board=DeckFrame(root)
+    playerboard=PlayerFrame(root,player)
     for _ in range(10):
-        board._add_card(random_generate_card())
-    board.sort_imglabel()
-    
-    print(board.SIZE)
+        playerboard._add_card(board.deck.deal())
+    # board=PlayerFrame(root,player,size=SM_SIZE)
+    # for _ in range(4):
+    #     board.player.cards.append(random_generate_card())
+    board.create_deck()
+    # print(board.SIZE)
     #print(player.cards_labels)
     root.mainloop()
 
-      
         
