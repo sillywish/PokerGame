@@ -38,6 +38,7 @@ class BlackJackGame(Frame):
 
         
         computer_frame=PlayerFrame(self,self.computer)
+        computer_frame.pack(pady=10)
         self.widget_list["computer_frame"]=computer_frame
         
         winner_frame=Frame(self,width=800,height=40,bg="green")
@@ -45,6 +46,7 @@ class BlackJackGame(Frame):
         self.widget_list["winner_frame"]=winner_frame
         
         player_frame=PlayerFrame(self,self.player)
+        player_frame.pack()
         self.widget_list["player_frame"]=player_frame
         
     
@@ -135,15 +137,15 @@ class BlackJackGame(Frame):
         if self.player.blackjack_point>21:           
             self.update_winner(self.computer)
             self.set_state(PokerGameState.FINSIHED)
-            self.updata_button()
+            self.update_button()
         
         elif len(self.player.cards)>=5:
             self.update_winner(self.player)
             self.set_state(PokerGameState.FINSIHED)
-            self.updata_button()
+            self.update_button()
             
         self.set_state(PokerGameState.PLAYING)
-        self.updata_button()   
+        self.update_button()   
         #self.widget_list["surrender_button"].config(state="disabled")
                       
     def stand(self):
@@ -151,14 +153,14 @@ class BlackJackGame(Frame):
         winner=find_blackjack_winner(self.computer,self.player)
         self.update_winner(winner)
         self.set_state(PokerGameState.FINSIHED)
-        self.updata_button()
+        self.update_button()
       
     def double_down(self):
         pass
     
     def surrender(self):       
         self.set_state(PokerGameState.FINSIHED)
-        self.updata_button()
+        self.update_button()
                 
     def update_scoreboard(self):
         self.widget_list["score_label"].config(text=f"Your point is {str(self.player.point)}")
@@ -177,7 +179,7 @@ class BlackJackGame(Frame):
         self.widget_list["player_frame"].title_label.config(text=f"Player is {self.player.blackjack_point}") 
         self.update_scoreboard()
         
-    def updata_button(self):
+    def update_button(self):
              
         if self.state == PokerGameState.START:
             self.widget_list["start_button"].pack_forget()
@@ -222,7 +224,7 @@ class BlackJackGame(Frame):
         self.deal_cards(self.computer,is_show=False)
         self.deal_cards(self.computer)      
         self.set_state(PokerGameState.START)
-        self.updata_button()      
+        self.update_button()      
         
     def restart(self):
         self.computer.reset_cards()
@@ -240,7 +242,7 @@ class BlackJackGame(Frame):
         self.deal_cards(self.computer)
         
         self.set_state(PokerGameState.RESTART)
-        self.updata_button()        
+        self.update_button()        
 
     def check_game_end(self) -> bool:
         if self.player.point==0:

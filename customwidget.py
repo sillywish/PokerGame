@@ -2,11 +2,10 @@ from tkinter import *
 from tkinter import ttk
 
 from dataclasses import dataclass
-from enum import Enum,auto
+
 from PIL import Image, ImageTk
 from cardgame import *
 from copy import deepcopy
-
 from cardgame import Card, Player
 
 @dataclass
@@ -21,6 +20,9 @@ class FrameSize:
     card_gap: int
     card_top_gap: int
     title_font: tuple
+    # stock_width: int
+    # stock_height: int
+    
     
 def percent(default:FrameSize,percent) ->FrameSize:
     frame_width = percent * default.frame_width
@@ -59,7 +61,8 @@ DEFAULT_SIZE=FrameSize(
         card_top_gap = 20, 
         title_font = ("courier", 15)      
     )
-SM_SIZE=percent(DEFAULT_SIZE,percent=0.8)
+DEFAULT_SIZE=percent(DEFAULT_SIZE,percent=0.8)
+SM_SIZE=percent(DEFAULT_SIZE,percent=0.5)
 BG_SIZE=percent(DEFAULT_SIZE,percent=1.4)
 
 class PlayerFrame(Frame):
@@ -73,11 +76,10 @@ class PlayerFrame(Frame):
                     height=self.SIZE.frame_height,
                     bg=self.SIZE.frame_bg,)
         #self.config(width=800,height=290,bg="green")
-        self.pack(pady=10)
         self.pack_propagate(False)
         self.title_label = Label(self,text=self.player.name,font=self.SIZE.title_font,bg="green")
         self.title_label.pack(pady=5)
-        self.card_frame=Canvas(self,
+        self.card_frame=Frame(self,
                               width=self.SIZE.card_frame_width,
                               height=self.SIZE.frame_height,
                               bg=self.SIZE.card_frame_bg,
@@ -91,7 +93,7 @@ class PlayerFrame(Frame):
     
     def create_card_back(self):
         card_back_img=Image.open("cards/cardback.png")
-        card_back_img=card_back_img.resize((150,218))
+        card_back_img=card_back_img.resize(self.SIZE.card_size)
         card_img = ImageTk.PhotoImage(card_back_img)
         self.player.cards_img["card"] = card_img
     #使用pack()部署卡片图片使用于简单的游戏规则  
@@ -142,9 +144,10 @@ class PlayerFrame(Frame):
         imglabel=CardLabel(self.card_frame,card=card,position=position,image=card_img,)
         
         #if flag is true add event when click img can flip over
-        if not card.show and flag:
-            imglabel.bind("<Button-1>",lambda event : self._display_card(event))
-        imglabel.bind("<Button-1>",lambda event : self.get_card_obj(event))
+        # if not card.show and flag:
+        #     imglabel.bind("<Button-1>",lambda event : self._display_card(event))
+        if card.show:
+            imglabel.bind("<Button-1>",lambda event : self.get_card_obj(event))
         self.player.cards_labels.append(imglabel)        
         self.reposition()
                
@@ -192,11 +195,13 @@ class PlayerFrame(Frame):
         for widget in self.card_frame.winfo_children():
              widget.destroy()
              
-    def sort_imglabel(self):
+    def sort_imglabel(self,flag=True):
         """sorted player cards
         """
-        print("sorted cards")
-        self.player.sortedcards()
+        if flag:
+            self.player.sortedcards()
+        else:
+            self.player.sortedcards_by_num()
         player_sortedcards=deepcopy(self.player.cards)
         position=0
         for label in self.player.cards_labels:
@@ -208,7 +213,7 @@ class PlayerFrame(Frame):
             player_sortedcards.pop(0)
     
 
-    def _add_card(self,card:Card):
+    def _add_card(self,card:Card,):
         """
         add card for complex rule game
         """ 
@@ -251,7 +256,6 @@ class PlayerFrame(Frame):
         #sotre the index of picked cards
         index_remove_list=[]
         for label, card_tuple in self.picked_cards.items():
-            print(card_tuple)
             label.destroy()
             index_remove_list.append(card_tuple[1])
             cards_list.append(card_tuple[0])
@@ -262,16 +266,27 @@ class PlayerFrame(Frame):
             self.player.cards_labels.pop(index)
             self.player.cards.pop(index) 
         self.picked_cards.clear()
-        
-        
-        #print(self.player.cards)
-
-        
-        
-        #after remove cards repositon all remain cards
+        self.sort_imglabel()
         self.reposition()
+        return cards_list
         
-        print(cards_list)
+    
+    def destroy_card_by_index(self,index_list:list[int]) -> None:
+        
+        index_list.sort(reverse=True)
+        for index in index_list:
+            self.player.cards_labels[index].destroy()
+            self.player.cards_labels.pop(index)
+            self.player.cards.pop(index)
+            
+        
+    def get_picked_cards(self) -> list[Card]:
+
+        cards_list: list[Card] =[]
+        
+        #sotre the index of picked cards
+        for label, card_tuple in self.picked_cards.items():
+            cards_list.append(card_tuple[0])
         return cards_list
 
 class RummyDeck(Deck):
@@ -283,22 +298,25 @@ class RummyDeck(Deck):
         #self.discard_label : list[CardLabel]=[]
 
 class DeckFrame(Frame):
-    def __init__(self, parent,size=DEFAULT_SIZE):
+    
+    def __init__(self, parent,update_state,size=DEFAULT_SIZE):
         Frame.__init__(self, parent)
         self.parent = parent
         self.deck = RummyDeck()
+        self.state = RummyGameState.DRAWCARD
         self.SIZE = size
+        self.update_state = update_state
         self.current_player: PlayerFrame =None
         self.picked_cards=[]
         self.topcard_position=None
         self.config(width=self.SIZE.frame_width,
                     height=self.SIZE.frame_height,
                     bg=self.SIZE.frame_bg,)
-        self.pack(pady=10)
+        # self.pack(pady=10)
         self.pack_propagate(False)
-        self.stock = Frame(self,width=400,height=300,bg="red")
+        self.stock = Frame(self,width=self.SIZE.frame_width/2,height=self.SIZE.frame_height,bg="red")
         self.stock.pack(side=LEFT)
-        self.discard_pile = Frame(self,width=400,height=300,bg="black")
+        self.discard_pile = Frame(self,width=self.SIZE.frame_width/2,height=self.SIZE.frame_height,bg="black")
         self.discard_pile.pack(side=LEFT)
     
     def create_deck(self) -> None:
@@ -309,7 +327,7 @@ class DeckFrame(Frame):
             
     def create_card_back(self):
         card_back_img=Image.open("cards/cardback.png")
-        card_back_img=card_back_img.resize((150,218))
+        card_back_img=card_back_img.resize(self.SIZE.card_size)
         card_img = ImageTk.PhotoImage(card_back_img)
         self.deck.cards_img["card"] = card_img
                   
@@ -329,7 +347,8 @@ class DeckFrame(Frame):
         position = len(self.deck.img_labels)
         self.topcard_position = position
         imglabel=CardLabel(self.stock,card=card,position=position,image=card_img,)
-        imglabel.place(x=-75,y=30,relx=0.5)
+        x_piont = -int(self.SIZE.card_size[0]/2)
+        imglabel.place(x=x_piont,y=30,relx=0.5)
         
         #if flag is true add event when click img can flip over
         # if not card.show and flag:
@@ -354,13 +373,21 @@ class DeckFrame(Frame):
      
             
     def deal_card(self,event) -> None:
+        """deal card funtion for click event"""
         widget = event.widget
         #print(widget)
-        print(widget.position)
+        print(f"抽的卡的位置是{widget.position}")
+        print(self.deck)
+        print(f"抽牌堆最上面的卡的位置是{self.topcard_position}")
         #print(widget.card)
         position = widget.position
-        if not self.current_player:
+        #如果是从牌堆抽牌 记录的牌堆最上面的位置-1
+        
+        if self.state !=RummyGameState.DRAWCARD:
             return
+        
+        if self.topcard_position == position:
+            self.topcard_position -=1
         #print(self.deck.img_labels)
         card=self.deck.cards.pop(position)
         for label in self.deck.img_labels[position:]:
@@ -370,9 +397,12 @@ class DeckFrame(Frame):
         #print(len(player.cards_labels))
         
         widget.destroy()
-        print(card)     
-        self.current_player._add_card(card)
-        self.current_player.sort_imglabel()
+        print(card)
+        state=RummyGameState.PLAYING
+        self.update_state(state,card=card)
+        self.state = state    
+        # self.current_player._add_card(card)
+        # self.current_player.sort_imglabel()
         # self.create_cardimg_label(card,self.discard_pile)
         # for label in self.deck.img_labels:
         #     print(label.position)
@@ -382,10 +412,9 @@ class DeckFrame(Frame):
     def _deal_card(self) -> Card:
         widget = self.deck.img_labels[self.topcard_position]
         #print(widget)
-        print(widget.position)
-        if not self.current_player:
-            return
-        print(self.deck.img_labels)
+        print(f"抽的卡的位置是{widget.position}")
+        print(self.deck)
+        print(f"抽牌堆最上面的卡的位置是{self.topcard_position}")
         card=self.deck.cards.pop(self.topcard_position)
         for label in self.deck.img_labels[self.topcard_position:]:
             label.position-=1
@@ -406,7 +435,7 @@ class DeckFrame(Frame):
 if __name__ == "__main__":
     root=Tk()
     player=Player("Computer")
-    board=DeckFrame(root)
+    board=DeckFrame(root,None)
     playerboard=PlayerFrame(root,player)
     for _ in range(10):
         playerboard._add_card(board.deck.deal())

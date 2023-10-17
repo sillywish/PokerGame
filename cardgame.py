@@ -6,6 +6,23 @@ from copy import deepcopy
 from typing import Any,Optional
 from tkinter import Label
 
+SUITS={'hearts':"♡",'diamonds':"♢",'spades':"♠",'clubs':"♣"}
+VALUES={
+        "Two":2,
+        "Three":3,
+        "Four":4,
+        "Five":5,
+        "Six":6,
+        "Seven":7,
+        "Eight":8,
+        "Nive":9,
+        "Ten":10,
+        "Jack":11,
+        "Queen":12,
+        "King":13,
+        "Ace":14,
+    }  
+
 
 class Card:
     def __init__(self,
@@ -19,6 +36,7 @@ class Card:
         self.name: str = name
         self.symbol: str =symbol
         self.show: bool = True
+        self.num: int = self.cal_num()
         
 
     def __repr__(self) -> str:
@@ -30,7 +48,16 @@ class Card:
     @property   
     def img_name(self) -> str:
         return f"{str(self.value)}_of_{self.suit}.png"
-
+    
+    def cal_num(self) -> int:
+        if self.suit == "clubs":
+            return self.value+14
+        elif self.suit == "spades":
+            return self.value+14*2
+        elif self.suit == "hearts":
+            return self.value+14*3
+        else:
+            return self.value
 class Deck:
     __suits={'hearts':"♡",'diamonds':"♢",'spades':"♠",'clubs':"♣"}
     __values={
@@ -138,6 +165,7 @@ class Player:
   
     #bubble_sort
     def sortedcards(self) ->None:
+        """Bubble sort"""
         length = len(self.cards)
         
         if length < 1:
@@ -147,6 +175,22 @@ class Player:
             is_swap = False
             for j in range(length - i -1):
                 if self.cards[j].value > self.cards[j+1].value:
+                    self.cards[j], self.cards[j+1] = self.cards[j+1], self.cards[j]
+                    is_swap=True
+            if not is_swap:
+                break
+            
+    def sortedcards_by_num(self) ->None:
+        """Bubble sort by card.num"""
+        length = len(self.cards)
+        
+        if length < 1:
+            return
+        
+        for i in range(length):
+            is_swap = False
+            for j in range(length - i -1):
+                if self.cards[j].num > self.cards[j+1].num:
                     self.cards[j], self.cards[j+1] = self.cards[j+1], self.cards[j]
                     is_swap=True
             if not is_swap:
@@ -329,6 +373,13 @@ class PokerGameState(Enum):
     FINSIHED = auto()
     RESTART = auto()
 
+class RummyGameState(Enum):
+    DRAWCARD = auto()
+    PLAYING = auto()
+    DISCARD = auto()
+    GOOUT = auto()
+    SCORE = auto()
+    
 class CardLabel(Label):
     def __init__(self,parent,card,position,*args, **kwargs):
         Label.__init__(self,parent,*args, **kwargs)
@@ -341,7 +392,88 @@ class CardState(Enum):
     PICK = auto()      
     
     
+class RummyAI:
+    def __init__(self,hands: list[Card]) -> None:
+        self.cards = hands
+        self.values=sorted([card.value for card in self.cards])
+        self.nums=sorted([card.num for card in self.cards])
+        self.suits=[card.suit for card in self.cards]
+    
+        
+        
+    def has_set(self) -> None | list[int]:
+        """默认cards已经根据value排序"""
+        index= 1
+        count=1
+        has_set=False
+        startindex=0
+        result_set=None
+        current_value= self.values[0]
+        for value in self.values[1:]:
+            if value == current_value:
+                count+=1
+                if count >=3:
+                    has_set=True
+                    result_set=[i for i in range(startindex,index+1)]
+            else:
+                
+                current_value = value
+                startindex = index
+                if has_set:
+                    break
+                count=1
+            index+=1 
+                
+        # for value in set(self.values):
+        #     if self.values.count(value)>=3:
+        #         return True
+        
+        return result_set
 
+
+    def has_run(self) -> None| list[int]:
+        """默认列表已经根据card.num进行排序 并且没有重复元素"""
+        startindex=0
+        index=3
+        result_run = None
+        while index<=len(self.nums):
+            if self.checkConsecutive(self.nums[startindex:index]):
+                    result_run = [i for i in range(startindex,index)]
+                    if index-startindex==4:
+                        
+                        break
+                    index+=1
+            else:
+                startindex+=1
+                index+=1
+                
+        return result_run
+    
+    
+    # def find_nextcard(self,suit,value,cards:list[Card]):
+    #     for card in cards:
+    #         if card.value == value :
+    #             continue
+    #         elif card.value == value +1 :
+    #             if card.suit == suit:
+                    
+    #     pass       
+    def checkConsecutive(self,cards_value:list[int]) ->bool:
+        ##ace can be 1 or 14
+        if len(set(cards_value))!=len(cards_value):
+            return False
+        n = len(cards_value) - 1
+        if 14 in cards_value:
+            newcards_value=[]
+            for value in cards_value:
+                if value==14:
+                    newcards_value.append(1)
+                else:
+                    newcards_value.append(value)
+            
+            return (sum(np.diff(cards_value) == 1) >= n) or (sum(np.diff(sorted(newcards_value)) == 1) >= n)
+
+        return (sum(np.diff(cards_value) == 1) >= n)       
 
 def deal_cards(deck:Deck,playerlist:list[Player],is_show:bool=True):
     for player in playerlist:
@@ -623,6 +755,22 @@ def random_generate_card() ->Card:
     return card
 
 
+def generate_run() -> list[Card]:
+    cards=[]
+    for name in list(VALUES)[:4]:
+        value = value=VALUES[name]
+        suit = list(SUITS.keys())[0]
+        symbol = SUITS[suit]
+        if value>10:
+            symbol=name[0]+symbol
+        else:
+            symbol=str(value)+symbol
+        card = Card(suit,name=name,value=value,symbol=symbol)
+        cards.append(card)
+    
+    return cards   
+    
+
 #*********************************
 #core algorithm for blackjack game
 #*********************************
@@ -660,7 +808,12 @@ def find_blackjack_winner(computer:Player,player:Player)->Optional[Player]:
     else:
         return None 
             
-            
+
+
+
+
+
+          
 if __name__ == "__main__":
 
 
@@ -670,11 +823,18 @@ if __name__ == "__main__":
     
     a=Player()
     #card=random_generate_card()
-    for _ in range(5):
+    for _ in range(10):
         a.cards.append(random_generate_card())
-    print(a.cards)
-    a.sort()
-    print(a.cards)
+    a.cards=generate_run()
+    a.sortedcards_by_num()
+    print(a)
+    for card in a.cards:
+        print(card.num)
+    test = RummyAI(hands=a.cards)
+    print(test.has_run())
+    
+    
+
 
     #card=Card(suit='hearts',value=14),
     # a=[(2, 4), (1, 14), (1, 8), (1, 5)]
