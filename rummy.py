@@ -15,6 +15,7 @@ class RummyGame(Frame):
         self.player=Player()
         self.state = RummyGameState.DRAWCARD
         self.frame_list: dict[str,PlayerFrame|DeckFrame]={}
+        self.meld_list: list[PlayerFrame]=[]
         #self.display=Player("display")
         
         
@@ -35,6 +36,8 @@ class RummyGame(Frame):
         player_frame.grid(row=2,)
         self.frame_list['player_frame']=player_frame
         
+        button_frame = Frame(self,width=DEFAULT_SIZE.frame_width,height=50)
+        button_frame.grid(row=3,column=0)
         #stock.current_player=player_frame 
         stock.deck.shuffle()
         
@@ -49,10 +52,12 @@ class RummyGame(Frame):
         # for _ in range(10):
         #     self.board._add_card(random_generate_card())
         # self.board.sort_imglabel()
-        self.meld_button=Button(self,text="meld",command=self.play_cards)
-        self.meld_button.grid(row=3,column=0)
-        self.button=Button(self,text="discard",command=self.discard)
-        self.button.grid(row=2,column=1)
+        self.meld_button=Button(button_frame,text="meld",command=self.play_cards)
+        self.meld_button.pack(side=LEFT)
+        self.layout_button=Button(button_frame,text="layout",command=self.layout)
+        self.layout_button.pack(side=LEFT)
+        self.button=Button(button_frame,text="discard",command=self.discard)
+        self.button.pack(side=LEFT)
 
     
     def discard(self):
@@ -73,6 +78,24 @@ class RummyGame(Frame):
         # set_frame.pack()
         self.update_state(RummyGameState.DISCARD)
     
+    def layout(self):
+        layout_cards :list[tuple[list[Card],PlayerFrame]]= []
+        for frame in self.meld_list:
+            layout_cards.append((find_layout_cards(frame.player.cards),frame))
+         
+        print(layout_cards)       
+        played_card = self.frame_list['player_frame'].get_picked_cards()[0]
+        del_index = None
+        for index,item in enumerate(layout_cards):
+            if played_card in item[0]:
+                played_card = self.frame_list['player_frame'].destroy_picked_cards()[0]
+                item[1]._add_card(played_card)
+                del_index = index
+            
+        if del_index is None:
+            print("you can,t lay out")
+        else:
+            self.meld_list.pop(del_index)
     
     def update_state(self,state:RummyGameState,card: Card | None =None) -> None:
         if state == RummyGameState.PLAYING:
@@ -99,43 +122,71 @@ class RummyGame(Frame):
     def computer_moves(self):
         
         #deal_card
-        card = self.frame_list["stock_frame"]._deal_card()
+        card = None
+        discard_card = self.frame_list["stock_frame"].deck.cards[-1]
+        temp_cards=self.frame_list["computer_frame"].player.cards.copy()
+        temp_cards.append(discard_card)
+        print(temp_cards)
+        deal_test = RummyAI(temp_cards)
+        deal_test.cards=sorted(temp_cards,key=lambda x:x.num)
+        if deal_test.has_run():
+            card = self.frame_list["stock_frame"]._deal_card_from_discard()
+        deal_test.cards=sorted(temp_cards,key=lambda x:x.value)
+        if deal_test.has_set():
+            card = self.frame_list["stock_frame"]._deal_card_from_discard()
+        # print(id(self.frame_list["computer_frame"].player.cards))
+        if card is None:
+            print(f"抽的是抽牌堆")
+            card = self.frame_list["stock_frame"]._deal_card()
         print(f"computer deal {card}")
         self.frame_list["computer_frame"]._add_card(card)
-        
         test = RummyAI(self.frame_list["computer_frame"].player.cards)
         
         self.frame_list["computer_frame"].sort_imglabel()
         res=test.has_set()
         if res:
-            print(res)
-            play_card = test.cards[res[0]:res[-1]+1]
-            self.create_setframe(played_card=play_card)
-            
-            self.frame_list["computer_frame"].destroy_card_by_index(res)
-            self.frame_list["computer_frame"].reposition()
+            self.computer_meld(res)
+            # play_card = test.cards[res[0]:res[-1]+1]
+            # self.create_setframe(played_card=play_card)    
+            # self.frame_list["computer_frame"].destroy_card_by_index(res)
+            # self.frame_list["computer_frame"].reposition()
             #self.frame_list["computer_frame"].destroy_card_by_index(res)
             
         self.frame_list["computer_frame"].sort_imglabel(flag=False)
-        print(test.cards)
         res = test.has_run()
         if res:
-            print(res)
-            play_card = test.cards[res[0]:res[-1]+1]
-            self.create_setframe(played_card=play_card)
-            
-            self.frame_list["computer_frame"].destroy_card_by_index(res)
-            self.frame_list["computer_frame"].reposition()
+            self.computer_meld(res)
         #funtion for cal what to do 
         
         
         #discard()
+        
+        discard_index = random.choice(self.frame_list["computer_frame"].player.cards_labels).position
+        print(f"要丢弃的卡的位置是{discard_index}")
+        print(self.frame_list["computer_frame"].player.cards[discard_index])
+        discard=self.frame_list["computer_frame"].player.cards[discard_index]
+        self.frame_list['stock_frame'].create_discard_label(discard)
+        self.frame_list['stock_frame'].deck.cards.append(discard)
+        self.frame_list["computer_frame"].destroy_card_by_index([discard_index])
+        self.frame_list["computer_frame"].reposition()
+    
+    def computer_meld(self,indexlist):
+        play_card = self.frame_list["computer_frame"].player.cards[indexlist[0]:indexlist[-1]+1]
+        print(f"computer 有可以MELD的牌{play_card}")
+        self.create_setframe(played_card=play_card)         
+        self.frame_list["computer_frame"].destroy_card_by_index(indexlist)
+        self.frame_list["computer_frame"].reposition()
+        
+        
+        
     def create_setframe(self,played_card):
         temp_set = Player()
         set_frame=PlayerFrame(self.frame_list['meld_frame'],temp_set,size=SM_SIZE)
         for card in played_card:
             set_frame._add_card(card)
-        set_frame.pack()   
+        set_frame.pack()
+        if len(played_card) == 3:
+            self.meld_list.append(set_frame)   
 
         
 if __name__ == "__main__":

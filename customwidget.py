@@ -370,8 +370,7 @@ class DeckFrame(Frame):
         imglabel.bind("<Button-1>",lambda event : self.deal_card(event))
         self.deck.img_labels.append(imglabel)
           
-     
-            
+                
     def deal_card(self,event) -> None:
         """deal card funtion for click event"""
         widget = event.widget
@@ -410,6 +409,7 @@ class DeckFrame(Frame):
         #print(len(player.cards_labels))
     
     def _deal_card(self) -> Card:
+        """deal card from stock"""
         widget = self.deck.img_labels[self.topcard_position]
         #print(widget)
         print(f"抽的卡的位置是{widget.position}")
@@ -421,13 +421,26 @@ class DeckFrame(Frame):
         self.deck.img_labels.pop(self.topcard_position)
         self.topcard_position-=1
         #print(len(self.stock.children))
-        #print(len(player.cards_labels))
-        
-        widget.destroy()
-        
-        
+        #print(len(player.cards_labels))        
+        widget.destroy() 
         return card
     
+    def _deal_card_from_discard(self) -> Card:
+        """deal card from stock"""
+        widget = self.deck.img_labels[-1]
+        position = widget.position
+        #print(widget)
+        print(f"抽的卡的位置是{position}")
+        print(self.deck)
+        print(f"抽牌堆最上面的卡的位置是{len(self.deck.img_labels)}")
+        card=self.deck.cards.pop(position)
+        for label in self.deck.img_labels[position:]:
+            label.position-=1
+        self.deck.img_labels.pop(position)
+        #print(len(self.stock.children))
+        #print(len(player.cards_labels))        
+        widget.destroy() 
+        return card
     
     def pass_to_discard(self,card:Card):
         self.create_cardimg_label
