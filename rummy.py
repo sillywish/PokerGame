@@ -1,5 +1,5 @@
 from tkinter import *
-from tkinter import ttk
+from tkinter import ttk,messagebox
 from enum import Enum,auto
 from cardgame import *
 from customwidget import PlayerFrame,SM_SIZE,DeckFrame,DEFAULT_SIZE
@@ -28,8 +28,8 @@ class RummyGame(Frame):
         stock.grid(row=1,column=0)
         self.frame_list['stock_frame']=stock
         
-        meld_frame = Frame(self,width=DEFAULT_SIZE.frame_width/2,height=DEFAULT_SIZE.frame_height*2,bg="blue")
-        meld_frame.grid(row=0,column=1,rowspan=2)
+        meld_frame = Frame(self,width=DEFAULT_SIZE.frame_width/2,height=DEFAULT_SIZE.frame_height*3,bg="blue")
+        meld_frame.grid(row=0,column=1,rowspan=3)
         self.frame_list['meld_frame']=meld_frame
     
         player_frame=PlayerFrame(self,self.player)
@@ -65,18 +65,15 @@ class RummyGame(Frame):
         for card in played_card:
              self.frame_list['stock_frame'].create_discard_label(card)
              self.frame_list['stock_frame'].deck.cards.append(card)
-        self.computer_moves()
-        self.update_state(RummyGameState.DRAWCARD)
+        if not self.check_goout():
+            self.computer_moves()
+            self.update_state(RummyGameState.DRAWCARD)
 
     def play_cards(self):
         played_card = self.frame_list['player_frame'].destroy_picked_cards()
         self.create_setframe(played_card)
-        # temp_set = Player()
-        # set_frame=PlayerFrame(self.frame_list['meld_frame'],temp_set,size=SM_SIZE)
-        # for card in played_card:
-        #     set_frame._add_card(card)
-        # set_frame.pack()
-        self.update_state(RummyGameState.DISCARD)
+        if not self.check_goout():
+            self.update_state(RummyGameState.DISCARD)
     
     def layout(self):
         layout_cards :list[tuple[list[Card],PlayerFrame]]= []
@@ -98,6 +95,24 @@ class RummyGame(Frame):
             print("you can,t lay out")
         else:
             self.meld_list.pop(del_index)
+        
+        self.check_goout()
+            
+    
+    def check_goout(self) -> bool:
+        if len(self.frame_list['player_frame'].player.cards) == 0:
+            self.update_state(RummyGameState.GOOUT)
+            return True
+        return False
+    
+    def show_winner(self) -> None:
+        if len(self.frame_list['player_frame'].player.cards) == 0:
+            messagebox.showinfo("showinfo", "winner is player") 
+            
+        else:
+            messagebox.showinfo("showinfo", "winner is computer") 
+            
+        
     
     def update_state(self,state:RummyGameState,card: Card | None =None) -> None:
         if state == RummyGameState.PLAYING:
@@ -116,6 +131,11 @@ class RummyGame(Frame):
             self.state = RummyGameState.DISCARD
             self.button.config(state="normal")
             self.meld_button.config(state="disabled")
+        elif state == RummyGameState.GOOUT:
+            self.frame_list['stock_frame'].state =RummyGameState.GOOUT
+            self.state = RummyGameState.GOOUT
+            self.show_winner()
+
             
         #self.board.picked_cards.clear()
         # for card in played_card:
@@ -197,11 +217,14 @@ class RummyGame(Frame):
                     self.frame_list["computer_frame"].reposition()
                     layout_cards[index][1]._add_card(card)
                     del_index = index
+                    print(f"delete index is {del_index}")
                     index = 0
                     break
-            if del_index:
+            #!!! python 中 的 if 判断 0 也是False
+            if del_index is not None:
                 self.meld_list.pop(del_index)
                 layout_cards.pop(del_index)
+                print(self.meld_list)
                 del_index = None
             else:
                 index +=1

@@ -87,15 +87,13 @@ class PlayerFrame(Frame):
         #self.card_frame=Frame(self,width=800,height=240,bd=0,bg="red")
         self.card_frame.pack()
         
-        #create_cardback
-        
-        #self.card_frame.winfo_containing
     
     def create_card_back(self):
         card_back_img=Image.open("cards/cardback.png")
         card_back_img=card_back_img.resize(self.SIZE.card_size)
         card_img = ImageTk.PhotoImage(card_back_img)
         self.player.cards_img["card"] = card_img
+        
     #使用pack()部署卡片图片使用于简单的游戏规则  
     def create_cardimg_label(self,card:Card,flag:bool=True):
         
@@ -212,7 +210,6 @@ class PlayerFrame(Frame):
             label.config(image=self.player.cards_img[key])
             player_sortedcards.pop(0)
     
-
     def _add_card(self,card:Card,):
         """
         add card for complex rule game
@@ -278,8 +275,7 @@ class PlayerFrame(Frame):
             self.player.cards_labels[index].destroy()
             self.player.cards_labels.pop(index)
             self.player.cards.pop(index)
-            
-        
+                   
     def get_picked_cards(self) -> list[Card]:
 
         cards_list: list[Card] =[]
@@ -306,7 +302,6 @@ class DeckFrame(Frame):
         self.state = RummyGameState.DRAWCARD
         self.SIZE = size
         self.update_state = update_state
-        self.current_player: PlayerFrame =None
         self.picked_cards=[]
         self.topcard_position=None
         self.config(width=self.SIZE.frame_width,
@@ -320,7 +315,7 @@ class DeckFrame(Frame):
         self.discard_pile.pack(side=LEFT)
     
     def create_deck(self) -> None:
-        
+        """according self.deck create imglabel"""      
         self.create_discard_label(self.deck.cards[0])
         for card in self.deck.cards[1:]:
             self.create_cardimg_label(card)
@@ -339,9 +334,9 @@ class DeckFrame(Frame):
         return card_resize_img     
     
     def create_cardimg_label(self, card: Card):
+        """create card label obj for stock"""
         if "card" not in self.deck.cards_img:
-            self.create_card_back()        
-         
+            self.create_card_back()              
         card_img = self.deck.cards_img["card"]
            
         position = len(self.deck.img_labels)
@@ -357,7 +352,8 @@ class DeckFrame(Frame):
         self.deck.img_labels.append(imglabel)
      
     def create_discard_label(self,card:Card):
-                #if img is not exsit then create one
+        """create card label obj for discard"""
+        #if img is not exsit then create one
         if card.symbol not in self.deck.cards_img:
             card_img = ImageTk.PhotoImage(self.resize_cards(card))
             self.deck.cards_img[card.symbol] = card_img
@@ -400,18 +396,10 @@ class DeckFrame(Frame):
         state=RummyGameState.PLAYING
         self.update_state(state,card=card)
         self.state = state    
-        # self.current_player._add_card(card)
-        # self.current_player.sort_imglabel()
-        # self.create_cardimg_label(card,self.discard_pile)
-        # for label in self.deck.img_labels:
-        #     print(label.position)
-        #print(len(self.stock.children))
-        #print(len(player.cards_labels))
     
     def _deal_card(self) -> Card:
         """deal card from stock"""
         widget = self.deck.img_labels[self.topcard_position]
-        #print(widget)
         print(f"抽的卡的位置是{widget.position}")
         print(self.deck)
         print(f"抽牌堆最上面的卡的位置是{self.topcard_position}")
@@ -426,19 +414,16 @@ class DeckFrame(Frame):
         return card
     
     def _deal_card_from_discard(self) -> Card:
-        """deal card from stock"""
+        """deal card from discard"""
         widget = self.deck.img_labels[-1]
         position = widget.position
-        #print(widget)
         print(f"抽的卡的位置是{position}")
         print(self.deck)
         print(f"抽牌堆最上面的卡的位置是{len(self.deck.img_labels)}")
         card=self.deck.cards.pop(position)
         for label in self.deck.img_labels[position:]:
             label.position-=1
-        self.deck.img_labels.pop(position)
-        #print(len(self.stock.children))
-        #print(len(player.cards_labels))        
+        self.deck.img_labels.pop(position)     
         widget.destroy() 
         return card
     

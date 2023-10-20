@@ -38,6 +38,7 @@ class ShowHandGame(Frame):
            
         computer_frame=PlayerFrame(self,self.computer)
         self.widget_list["computer_frame"]=computer_frame
+        computer_frame.pack()
         
         winner_frame=Frame(self,width=800,height=40,bg="green")
         winner_frame.pack()
@@ -45,6 +46,7 @@ class ShowHandGame(Frame):
         
         player_frame=PlayerFrame(self,self.player)
         self.widget_list["player_frame"]=player_frame
+        player_frame.pack()
         
   
         button_frame=Frame(self,width=800,height=40,bd=0,bg="green")
