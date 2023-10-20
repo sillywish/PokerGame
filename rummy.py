@@ -85,6 +85,8 @@ class RummyGame(Frame):
          
         print(layout_cards)       
         played_card = self.frame_list['player_frame'].get_picked_cards()[0]
+        
+        print(self.frame_list['player_frame'].player.cards.index(played_card))
         del_index = None
         for index,item in enumerate(layout_cards):
             if played_card in item[0]:
@@ -140,25 +142,26 @@ class RummyGame(Frame):
             card = self.frame_list["stock_frame"]._deal_card()
         print(f"computer deal {card}")
         self.frame_list["computer_frame"]._add_card(card)
+        
+        #COMPUTER Playing either meld or check can lay out
         test = RummyAI(self.frame_list["computer_frame"].player.cards)
         
-        self.frame_list["computer_frame"].sort_imglabel()
-        res=test.has_set()
-        if res:
-            self.computer_meld(res)
-            # play_card = test.cards[res[0]:res[-1]+1]
-            # self.create_setframe(played_card=play_card)    
-            # self.frame_list["computer_frame"].destroy_card_by_index(res)
-            # self.frame_list["computer_frame"].reposition()
-            #self.frame_list["computer_frame"].destroy_card_by_index(res)
-            
-        self.frame_list["computer_frame"].sort_imglabel(flag=False)
-        res = test.has_run()
-        if res:
-            self.computer_meld(res)
-        #funtion for cal what to do 
+        while test.has_set() or test.has_run():
+            print(test.cards)
+            print(self.frame_list["computer_frame"].player.cards)
+            test.recalculate()
+            if test.has_set():
+                self.frame_list["computer_frame"].sort_imglabel()
+                self.computer_meld(test.has_set())
+                
+            elif test.has_run():
+                self.frame_list["computer_frame"].sort_imglabel(flag=False)
+                
+                self.computer_meld(test.has_run())
+                
+        #funtion for check if has card for lay out 
         
-        
+        self.computer_layout()
         #discard()
         
         discard_index = random.choice(self.frame_list["computer_frame"].player.cards_labels).position
@@ -177,8 +180,32 @@ class RummyGame(Frame):
         self.frame_list["computer_frame"].destroy_card_by_index(indexlist)
         self.frame_list["computer_frame"].reposition()
         
+    def computer_layout(self):
+        layout_cards :list[tuple[list[Card],PlayerFrame]]= []
+        for frame in self.meld_list:
+            layout_cards.append((find_layout_cards(frame.player.cards),frame))
         
-        
+        del_index = None
+        index=0
+        print(layout_cards)
+        while index<len(layout_cards) and len(layout_cards)>0:
+            for card in layout_cards[index][0]:
+                if card in self.frame_list["computer_frame"].player.cards:
+                    card_index=self.frame_list["computer_frame"].player.cards.index(card)
+                    print(f"computer has {card} for lay out")
+                    self.frame_list['computer_frame'].destroy_card_by_index([card_index])
+                    self.frame_list["computer_frame"].reposition()
+                    layout_cards[index][1]._add_card(card)
+                    del_index = index
+                    index = 0
+                    break
+            if del_index:
+                self.meld_list.pop(del_index)
+                layout_cards.pop(del_index)
+                del_index = None
+            else:
+                index +=1
+                                       
     def create_setframe(self,played_card):
         temp_set = Player()
         set_frame=PlayerFrame(self.frame_list['meld_frame'],temp_set,size=SM_SIZE)

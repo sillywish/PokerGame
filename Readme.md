@@ -19,3 +19,6 @@
 实现了rummy layout逻辑的基本判断
 实现了rummy ui layout按钮的基本功能
 实现了computer 对弃牌堆卡的判断
+## 2023 10/20
+实现了computer 对layout牌堆的判断
+完成简单电脑游玩AI逻辑的编写

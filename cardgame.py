@@ -1,6 +1,7 @@
 import random
 import numpy as np
 import os
+from functools import cache
 from enum import Enum,auto
 from copy import deepcopy
 from typing import Any,Optional
@@ -403,7 +404,7 @@ class RummyAI:
         self.values=sorted([card.value for card in self.cards])
         self.nums=sorted([card.num for card in self.cards])
         self.suits=[card.suit for card in self.cards]
-           
+      
     def has_set(self) -> None | list[int]:
         """默认cards已经根据value排序"""
         index= 1
@@ -419,7 +420,6 @@ class RummyAI:
                     has_set=True
                     result_set=[i for i in range(startindex,index+1)]
             else:
-                
                 current_value = value
                 startindex = index
                 if has_set:
@@ -427,12 +427,9 @@ class RummyAI:
                 count=1
             index+=1 
                 
-        # for value in set(self.values):
-        #     if self.values.count(value)>=3:
-        #         return True
         
         return result_set
-
+    
     def has_run(self) -> None| list[int]:
         """默认列表已经根据card.num进行排序 并且没有重复元素"""
         startindex=0
@@ -448,9 +445,22 @@ class RummyAI:
             else:
                 startindex+=1
                 index+=1
+        #print("调用一次 has_run 函数")
                 
         return result_run
-    
+ 
+    def discard_by_index(self,indexlist: list[int]):
+        indexlist.sort(reverse=True)
+        for index in indexlist:
+            self.cards.pop(index)
+        self.recalculate()
+            
+    def recalculate(self) -> None:
+               
+        self.values=sorted([card.value for card in self.cards])
+        self.nums=sorted([card.num for card in self.cards])
+        self.suits=[card.suit for card in self.cards]
+
     def find_layout_cards(self,cards: list[Card]) -> list[Card] | None:
         if len(cards)>3:
             return 
@@ -870,28 +880,30 @@ def get_name_by_value(value: int) -> str:
     for name in VALUES:
         if VALUES[name] == value:
             return name 
-         
+
+        
 if __name__ == "__main__":
 
 
+    
     #main()
     #one_vs_one()
        
     
     a=Player()
-    #card=random_generate_card()
-    for _ in range(10):
-        a.cards.append(random_generate_card())
-    a.cards=random_generate_straight()
-    a.sortedcards_by_num()
-    print(find_layout_cards(a.cards))
-    print(a)
+    # #card=random_generate_card()
+    # for _ in range(10):
+    #     a.cards.append(random_generate_card())
+    # a.cards=random_generate_straight()
+    # a.sortedcards_by_num()
+    # print(find_layout_cards(a.cards))
+    # print(a)
     
-    deck=Deck()
-    card = Card(suit='hearts',value=14,name=get_name_by_value(14),symbol=generate_symbol(get_name_by_value(14),suit='hearts'))
-    print(card)
-    if card in deck.cards:
-        print("ok")
+    # deck=Deck()
+    # card = Card(suit='hearts',value=14,name=get_name_by_value(14),symbol=generate_symbol(get_name_by_value(14),suit='hearts'))
+    # print(card)
+    # if card in deck.cards:
+    #     print("ok")
     #print(deck.cards)
     # for card in a.cards:
     #     print(card.num)
