@@ -24,3 +24,12 @@
 完成简单电脑游玩AI逻辑的编写
 修改了一些逻辑性的BUG
 实现一局完整的简单对局
+## 2023 10/23
+添加对MELD时的判断
+添加电脑AI的弃牌逻辑 计算每张卡牌的COST COST算法如下
+### cost for rummy cards
+    cost=base point + set point +run point
+    basepoint: 1-10 point, the more value the less point value >=10 point =1
+    setpoint : has same set cards  10 point
+    runpoint : etc (9,10)pair 20 point , etc (7,9) 10 point
+修改CARD的symbol为property

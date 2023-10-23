@@ -24,18 +24,33 @@ VALUES={
         "Ace":14,
     }  
 
+RUMMY_VALUES={
+        "Two":2,
+        "Three":3,
+        "Four":4,
+        "Five":5,
+        "Six":6,
+        "Seven":7,
+        "Eight":8,
+        "Nive":9,
+        "Ten":10,
+        "Jack":11,
+        "Queen":12,
+        "King":13,
+        "Ace":1,
+    }  
 
 class Card:
     def __init__(self,
                  suit:str,
                  value:int,
                  name:str,
-                 symbol:str) -> None:
+                 ) -> None:
         
         self.suit: str = suit
         self.value: int = value       
         self.name: str = name
-        self.symbol: str =symbol
+        #self.symbol: str =symbol
         self.show: bool = True
         self.num: int = self.cal_num()
                         
@@ -51,9 +66,24 @@ class Card:
             return True
         else:
             return False
-       
+        
+    def __hash__(self):
+        return hash((self.name, self.suit, self.value))
+    
+    # @property
+    # def value(self):
+    #     return VALUES[self.name]    
+    @property
+    def symbol(self) -> str:
+        if VALUES[self.name]>10:
+            return self.name[0]+SUITS[self.suit]  
+        else:
+            return str(VALUES[self.name])+SUITS[self.suit]
+        
     @property   
     def img_name(self) -> str:
+        if self.value==1:
+            return f"14_of_{self.suit}.png"
         return f"{str(self.value)}_of_{self.suit}.png"
     
     
@@ -66,6 +96,16 @@ class Card:
             return self.value+14*3
         else:
             return self.value
+
+class RummyCard(Card):
+    @property
+    def symbol(self) -> str:
+        if RUMMY_VALUES[self.name]>10 or RUMMY_VALUES[self.name]==1:
+            return self.name[0]+SUITS[self.suit]  
+        else:
+            return str(RUMMY_VALUES[self.name])+SUITS[self.suit]
+    
+
 class Deck:
     __suits={'hearts':"♡",'diamonds':"♢",'spades':"♠",'clubs':"♣"}
     __values={
@@ -89,15 +129,21 @@ class Deck:
         self.cards=[]
         
                 
+        # for suit in self.__suits:
+        #     for name in self.__values:
+        #         if self.__values[name]>10:
+        #             symbol=name[0]+self.__suits[suit]
+        #             card=Card(suit,self.__values[name],name,symbol)
+        #         else:
+        #             symbol=str(self.__values[name])+self.__suits[suit]
+        #             card=Card(suit,self.__values[name],name,symbol)
+                
+        #         self.cards.append(card)
+        
         for suit in self.__suits:
             for name in self.__values:
-                if self.__values[name]>10:
-                    symbol=name[0]+self.__suits[suit]
-                    card=Card(suit,self.__values[name],name,symbol)
-                else:
-                    symbol=str(self.__values[name])+self.__suits[suit]
-                    card=Card(suit,self.__values[name],name,symbol)
-                
+ 
+                card=Card(suit,self.__values[name],name) 
                 self.cards.append(card)
 
     def __repr__(self) -> str:
@@ -107,14 +153,10 @@ class Deck:
         self.cards=[]        
         for suit in self.__suits:
             for name in self.__values:
-                if self.__values[name]>10:
-                    symbol=name[0]+self.__suits[suit]
-                    card=Card(suit,self.__values[name],name,symbol)
-                else:
-                    symbol=str(self.__values[name])+self.__suits[suit]
-                    card=Card(suit,self.__values[name],name,symbol)
-                
+ 
+                card=Card(suit,self.__values[name],name) 
                 self.cards.append(card)
+
       
     def shuffle(self) -> None:
         random.shuffle(self.cards)
@@ -126,8 +168,36 @@ class Deck:
     def num_of_crads(self) -> int:
         return len(self.cards)
     
-    def deal(self) -> Card:
+    def deal(self) -> Card | RummyCard:
         return self.cards.pop()
+
+class RummyDeck(Deck):
+    __suits = SUITS
+    __values = RUMMY_VALUES
+    
+    
+    def __init__(self) -> None:
+        self.cards=[]
+
+        for suit in self.__suits:
+            for name in self.__values:
+                card=RummyCard(suit,self.__values[name],name) 
+                self.cards.append(card)
+        self.cards_img : dict={}
+        self.img_labels : list[CardLabel]=[]
+        #self.discard_label : list[CardLabel]=[]
+        
+    def reset(self):
+        self.cards=[]        
+        for suit in self.__suits:
+            for name in self.__values:
+ 
+                card=RummyCard(suit,self.__values[name],name) 
+                self.cards.append(card)
+    
+    
+        
+        
 
 class Player:
     def __init__(self,name:str = "Player") -> None:
@@ -143,6 +213,7 @@ class Player:
 
     def __repr__(self) -> str:
         return f"{self.name} has cards {self.cards}"
+    
     
     @property
     def final_cat(self):
@@ -438,11 +509,13 @@ class RummyAI:
         while index<=len(self.nums):
             if self.checkConsecutive(self.nums[startindex:index]):
                     result_run = [i for i in range(startindex,index)]
-                    if index-startindex==4:
+                    # if index-startindex==4:
                         
-                        break
+                    #     break
                     index+=1
             else:
+                if result_run:
+                    break
                 startindex+=1
                 index+=1
         #print("调用一次 has_run 函数")
@@ -470,15 +543,6 @@ class RummyAI:
         if len(set(cards_value))!=len(cards_value):
             return False
         n = len(cards_value) - 1
-        if 14 in cards_value:
-            newcards_value=[]
-            for value in cards_value:
-                if value==14:
-                    newcards_value.append(1)
-                else:
-                    newcards_value.append(value)
-            
-            return (sum(np.diff(cards_value) == 1) >= n) or (sum(np.diff(sorted(newcards_value)) == 1) >= n)
 
         return (sum(np.diff(cards_value) == 1) >= n)       
 
@@ -750,13 +814,13 @@ def random_generate_card() ->Card:
     suit = random.choice(list(suits.keys()))
     name = random.choice(list(values.keys()))
     value = values[name]
-    symbol = suits[suit]
-    if value>10:
-        symbol=name[0]+symbol
-    else:
-        symbol=str(value)+symbol
+    # symbol = suits[suit]
+    # if value>10:
+    #     symbol=name[0]+symbol
+    # else:
+    #     symbol=str(value)+symbol
     
-    card=Card(suit,value,name,symbol)
+    card=Card(suit,value,name)
     # if random.randint(0,1):
     #     card.show=False
     return card
@@ -770,12 +834,12 @@ def random_generate_straight(length: int = 3) -> list[Card]:
     for name in list(VALUES)[startpoint:startpoint+length]:
         value = value=VALUES[name]
         
-        symbol = SUITS[suit]
-        if value>10:
-            symbol=name[0]+symbol
-        else:
-            symbol=str(value)+symbol
-        card = Card(suit,name=name,value=value,symbol=symbol)
+        # symbol = SUITS[suit]
+        # if value>10:
+        #     symbol=name[0]+symbol
+        # else:
+        #     symbol=str(value)+symbol
+        card = Card(suit,name=name,value=value)
         cards.append(card)
     
     return cards   
@@ -825,37 +889,103 @@ def find_blackjack_winner(computer:Player,player:Player)->Optional[Player]:
 
 def find_layout_cards(cards: list[Card]) -> list[Card] | None:
     result_cards = []
-    if len(cards)>3:
-        return None
+
     cards_suits = set([card.suit for card in cards])
     cards_values = sorted_by_value(cards)
     
     #if cards are set
     if len(cards_suits)> 1:
+        # set max card is 4
+        if len(cards)>3:
+            return None
         for suit in SUITS:
             if suit not in cards_suits:
-                symbol = generate_symbol(cards[0].name,suit)
-                return [Card(suit,cards[0].value,cards[0].name,symbol)]
+                return [Card(suit,cards[0].value,cards[0].name)]
     
+    #if cards are run
     suit = cards[0].suit
-    if cards_values[0] > 2:
+    if cards_values[0] > 1:
         min_value = cards_values[0]-1
-        min_name = get_name_by_value(min_value) 
-        min_card = Card(suit,min_value,min_name,generate_symbol(min_name,suit))
+        min_name = get_name_by_value(min_value,flag=False) 
+        min_card = Card(suit,min_value,min_name)
         result_cards.append(min_card)
     
-    if cards_values[-1] < 14:
+    if cards_values[-1] < 13:
         max_value = cards_values[-1]+1
-        max_name = get_name_by_value(max_value) 
-        max_card = Card(suit,max_value,max_name,generate_symbol(max_name,suit))            
+        max_name = get_name_by_value(max_value,flag=False) 
+        max_card = Card(suit,max_value,max_name)            
         result_cards.append(max_card)
     
     return result_cards
 
+def rummy_is_set(cards: list[Card]) -> bool:
+    valuelist=[card.value for card in cards]
+    if len(set(valuelist))>1:
+        return False
+    return True
 
+def rummy_is_run(cards: list[Card]) -> bool:
+    if len(cards)<3:
+        return False
+    cards.sort(key=lambda x:x.num)
+    return checkConsecutive([card.num for card in cards])
+       
+def cal_cost_rummy(cards: list[Card]) -> list[int]:
+    set_card= set(cards)
+    #print(set_card)
+    cost_list =[]
+    for card in cards:
+        point=cal_base_point(card) + cal_run_point(card,set_card) + cal_set_point(card,set_card)
+        
+        # #print(id(card))
+        # print(card)
+        #point = cal_run_point(card,set_card)
+        cost_list.append(point)
+    return cost_list     
+
+def cal_set_point(card: Card,cards:set[Card]) -> int:
+    suits = SUITS.copy()
+    suits.pop(card.suit)
+    for suit in suits:
+        temp_card = deepcopy(card)
+        temp_card.suit = suit
+        if temp_card in cards:
+            return 10
+    return 0
+
+def cal_run_point(card: Card,cards:set[Card]) -> int:
+    temp_card = deepcopy(card)
+    p_temp_card = deepcopy(card)
+    temp_cards = cards.copy()
+    temp_cards.remove(card)
     
     
-   
+    if card.value < 13:
+        temp_card.value = card.value + 1
+        temp_card.name = get_name_by_value(card.value+1,flag=False)
+    if card.value >1:
+        p_temp_card.value = card.value - 1
+        p_temp_card.name = get_name_by_value(card.value-1,flag=False)
+    
+    if temp_card in temp_cards or p_temp_card in temp_cards:
+        print(temp_card,p_temp_card)
+        return 20
+    
+    if card.value < 12:
+        temp_card.value = card.value + 2
+        temp_card.name = get_name_by_value(card.value+2,flag=False)
+    if card.value > 2:    
+        p_temp_card.value = card.value - 2
+        p_temp_card.name = get_name_by_value(card.value-2,flag=False)
+        
+    if temp_card in temp_cards or p_temp_card in temp_cards:
+        return 10
+
+    return 0
+    
+    
+def cal_base_point(card: Card) -> int:
+    return (10-card.value)   
 #*********************************
 #general function
 #*********************************
@@ -868,19 +998,36 @@ def sorted_by_num(cards: list[Card]) -> list[int]:
     """return list of sorted num of card"""
     return sorted([card.num for card in cards])
 
-def generate_symbol(value_name: str,suit: str) -> str:
+def generate_symbol(value_name: str,suit: str, flag =True) -> str:
     """generate symbol of card according to valuename and suit"""
-    if VALUES[value_name]>10:
+    if flag:
+        if VALUES[value_name]>10:
+            return value_name[0]+SUITS[suit]  
+        else:
+            return str(VALUES[value_name])+SUITS[suit]
+        
+    if RUMMY_VALUES[value_name]>10:
         return value_name[0]+SUITS[suit]  
     else:
-        return str(VALUES[value_name])+SUITS[suit]
+        return str(RUMMY_VALUES[value_name])+SUITS[suit]
                     
-def get_name_by_value(value: int) -> str:
+def get_name_by_value(value: int, flag =True) -> str:
     """find relative name of value"""
-    for name in VALUES:
-        if VALUES[name] == value:
+    if flag:
+        for name in VALUES:
+            if VALUES[name] == value:
+                return name 
+       
+    for name in RUMMY_VALUES:
+        if RUMMY_VALUES[name] == value:
             return name 
-
+        
+def checkConsecutive(cards_value:list[int]) ->bool:
+        ##ace can be 1 or 14
+    if len(set(cards_value))!=len(cards_value):
+        return False
+    n = len(cards_value) - 1
+    return (sum(np.diff(cards_value) == 1) >= n)  
         
 if __name__ == "__main__":
 
@@ -889,13 +1036,23 @@ if __name__ == "__main__":
     #main()
     #one_vs_one()
        
-    
+    deck=RummyDeck()
     a=Player()
+    deck.shuffle()
     # #card=random_generate_card()
-    # for _ in range(10):
-    #     a.cards.append(random_generate_card())
-    # a.cards=random_generate_straight()
-    # a.sortedcards_by_num()
+    for _ in range(10):
+        #a.cards.append(random_generate_card())
+        a.cards.append(deck.deal())
+    #a.cards=random_generate_straight(length=3)
+    #a.sortedcards_by_num()
+    #random.shuffle(a.cards)
+    a.sortedcards()
+    print(a)
+    print(cal_cost_rummy(a.cards))
+    #print(find_layout_cards(a.cards))
+    #print(rummy_is_run(a.cards))
+    # test = RummyAI(hands=a.cards)
+    # print(test.has_run())
     # print(find_layout_cards(a.cards))
     # print(a)
     
@@ -907,8 +1064,7 @@ if __name__ == "__main__":
     #print(deck.cards)
     # for card in a.cards:
     #     print(card.num)
-    # test = RummyAI(hands=a.cards)
-    # print(test.has_run())
+
     
     
 

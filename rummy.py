@@ -30,6 +30,7 @@ class RummyGame(Frame):
         
         meld_frame = Frame(self,width=DEFAULT_SIZE.frame_width/2,height=DEFAULT_SIZE.frame_height*3,bg="blue")
         meld_frame.grid(row=0,column=1,rowspan=3)
+        meld_frame.pack_propagate(False)
         self.frame_list['meld_frame']=meld_frame
     
         player_frame=PlayerFrame(self,self.player)
@@ -43,7 +44,7 @@ class RummyGame(Frame):
         
         for _ in range(10):
             card=stock.deck.deal()
-            #card.show=False
+            card.show=False
             computer_frame._add_card(card)
             player_frame._add_card(stock.deck.deal())
         computer_frame.sort_imglabel()    
@@ -70,6 +71,12 @@ class RummyGame(Frame):
             self.update_state(RummyGameState.DRAWCARD)
 
     def play_cards(self):
+        played_card = self.frame_list['player_frame'].get_picked_cards()
+        print(played_card)
+        if not rummy_is_run(played_card) and not rummy_is_set(played_card):
+            print("无效的卡牌组合")
+            return
+        
         played_card = self.frame_list['player_frame'].destroy_picked_cards()
         self.create_setframe(played_card)
         if not self.check_goout():
@@ -85,22 +92,26 @@ class RummyGame(Frame):
         
         print(self.frame_list['player_frame'].player.cards.index(played_card))
         del_index = None
+        is_vaild = False
         for index,item in enumerate(layout_cards):
             if played_card in item[0]:
                 played_card = self.frame_list['player_frame'].destroy_picked_cards()[0]
                 item[1]._add_card(played_card)
-                del_index = index
+                item[1].sort_imglabel()
+                is_vaild = True
+                if find_layout_cards(item[1].player.cards) is None:
+                    del_index = index
             
-        if del_index is None:
+        if not is_vaild:
             print("you can,t lay out")
-        else:
+        if del_index is not None:
             self.meld_list.pop(del_index)
         
         self.check_goout()
             
     
     def check_goout(self) -> bool:
-        if len(self.frame_list['player_frame'].player.cards) == 0:
+        if  len(self.frame_list['player_frame'].player.cards) == 0 or len(self.frame_list['computer_frame'].player.cards) == 0:
             self.update_state(RummyGameState.GOOUT)
             return True
         return False
@@ -161,6 +172,7 @@ class RummyGame(Frame):
             print(f"抽的是抽牌堆")
             card = self.frame_list["stock_frame"]._deal_card()
         print(f"computer deal {card}")
+        card.show=False
         self.frame_list["computer_frame"]._add_card(card)
         
         #COMPUTER Playing either meld or check can lay out
@@ -170,42 +182,53 @@ class RummyGame(Frame):
             print(test.cards)
             print(self.frame_list["computer_frame"].player.cards)
             test.recalculate()
-            if test.has_set():
-                self.frame_list["computer_frame"].sort_imglabel()
-                self.computer_meld(test.has_set())
-                
-            elif test.has_run():
+            if test.has_run():
                 self.frame_list["computer_frame"].sort_imglabel(flag=False)
-                
                 self.computer_meld(test.has_run())
+                if len(test.cards) ==0:
+                    break
+                
+            elif test.has_set():
+                self.frame_list["computer_frame"].sort_imglabel()
+                
+                self.computer_meld(test.has_set())
+                if len(test.cards) ==0:
+                    break
+            
+            
                 
         #funtion for check if has card for lay out 
-        
+        if self.state == RummyGameState.GOOUT:
+            return
         self.computer_layout()
         #discard()
         
-        discard_index = random.choice(self.frame_list["computer_frame"].player.cards_labels).position
-        print(f"要丢弃的卡的位置是{discard_index}")
-        print(self.frame_list["computer_frame"].player.cards[discard_index])
-        discard=self.frame_list["computer_frame"].player.cards[discard_index]
-        self.frame_list['stock_frame'].create_discard_label(discard)
-        self.frame_list['stock_frame'].deck.cards.append(discard)
-        self.frame_list["computer_frame"].destroy_card_by_index([discard_index])
-        self.frame_list["computer_frame"].reposition()
+        
+        if self.state == RummyGameState.GOOUT:
+            return
+        
+        self.computer_discard()
+        
+        self.check_goout()
     
     def computer_meld(self,indexlist):
         play_card = self.frame_list["computer_frame"].player.cards[indexlist[0]:indexlist[-1]+1]
+        for card in play_card:
+            card.show=True
         print(f"computer 有可以MELD的牌{play_card}")
         self.create_setframe(played_card=play_card)         
         self.frame_list["computer_frame"].destroy_card_by_index(indexlist)
         self.frame_list["computer_frame"].reposition()
         
+        self.check_goout()
+        
     def computer_layout(self):
-        layout_cards :list[tuple[list[Card],PlayerFrame]]= []
+        layout_cards :list[list[list[Card],PlayerFrame]]= []
         for frame in self.meld_list:
-            layout_cards.append((find_layout_cards(frame.player.cards),frame))
+            layout_cards.append([find_layout_cards(frame.player.cards),frame])
         
         del_index = None
+        new_layout = None
         index=0
         print(layout_cards)
         while index<len(layout_cards) and len(layout_cards)>0:
@@ -216,10 +239,16 @@ class RummyGame(Frame):
                     self.frame_list['computer_frame'].destroy_card_by_index([card_index])
                     self.frame_list["computer_frame"].reposition()
                     layout_cards[index][1]._add_card(card)
-                    del_index = index
-                    print(f"delete index is {del_index}")
+                    layout_cards[index][1].sort_imglabel()
+                    new_layout=find_layout_cards(layout_cards[index][1].player.cards)
+                    if new_layout is None:
+                        del_index = index
+                        print(f"delete index is {del_index}")
+                    
                     index = 0
                     break
+            if new_layout:
+                layout_cards[index][0]=new_layout
             #!!! python 中 的 if 判断 0 也是False
             if del_index is not None:
                 self.meld_list.pop(del_index)
@@ -228,15 +257,41 @@ class RummyGame(Frame):
                 del_index = None
             else:
                 index +=1
+         
+        self.check_goout() 
+    
+    def computer_discard(self):
+        print(self.frame_list["computer_frame"].player.cards)
+        cost_list = cal_cost_rummy(self.frame_list["computer_frame"].player.cards)
+        print(cost_list)
+        print(cost_list.index(min(cost_list)))
+        
+        discard_index = cost_list.index(min(cost_list))
+        #discard_index = random.choice(self.frame_list["computer_frame"].player.cards_labels).position
+        print(f"要丢弃的卡的位置是{discard_index}")
+        
+        discard=self.frame_list["computer_frame"].player.cards[discard_index]
+        discard.show=True
+        print(discard)
+        self.frame_list['stock_frame'].create_discard_label(discard)
+        self.frame_list['stock_frame'].deck.cards.append(discard)
+        self.frame_list["computer_frame"].destroy_card_by_index([discard_index])
+        self.frame_list["computer_frame"].reposition()
+    
                                        
     def create_setframe(self,played_card):
         temp_set = Player()
         set_frame=PlayerFrame(self.frame_list['meld_frame'],temp_set,size=SM_SIZE)
+        set_frame.title_label.pack_forget()
+        set_frame.pack_propagate(True)
         for card in played_card:
             set_frame._add_card(card)
+        set_frame.sort_imglabel()
+        
         set_frame.pack()
-        if len(played_card) == 3:
-            self.meld_list.append(set_frame)   
+        if len(played_card) == 4 and rummy_is_set(played_card):
+            return
+        self.meld_list.append(set_frame)   
 
         
 if __name__ == "__main__":

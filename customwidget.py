@@ -61,7 +61,7 @@ DEFAULT_SIZE=FrameSize(
         card_top_gap = 20, 
         title_font = ("courier", 15)      
     )
-DEFAULT_SIZE=percent(DEFAULT_SIZE,percent=0.8)
+#DEFAULT_SIZE=percent(DEFAULT_SIZE,percent=0.8)
 SM_SIZE=percent(DEFAULT_SIZE,percent=0.5)
 BG_SIZE=percent(DEFAULT_SIZE,percent=1.4)
 
@@ -200,14 +200,17 @@ class PlayerFrame(Frame):
             self.player.sortedcards()
         else:
             self.player.sortedcards_by_num()
+            
         player_sortedcards=deepcopy(self.player.cards)
         position=0
         for label in self.player.cards_labels:
-            key=player_sortedcards[0].symbol
+            
             label.card=player_sortedcards[0]
             label.position=position
             position+=1
-            label.config(image=self.player.cards_img[key])
+            if label.card.show:
+                key=player_sortedcards[0].symbol
+                label.config(image=self.player.cards_img[key])
             player_sortedcards.pop(0)
     
     def _add_card(self,card:Card,):
@@ -285,13 +288,13 @@ class PlayerFrame(Frame):
             cards_list.append(card_tuple[0])
         return cards_list
 
-class RummyDeck(Deck):
+# class RummyDeck(Deck):
     
-    def __init__(self) -> None:
-        super().__init__()
-        self.cards_img:dict={}
-        self.img_labels : list[CardLabel]=[]
-        #self.discard_label : list[CardLabel]=[]
+#     def __init__(self) -> None:
+#         super().__init__()
+#         self.cards_img:dict={}
+#         self.img_labels : list[CardLabel]=[]
+#         #self.discard_label : list[CardLabel]=[]
 
 class DeckFrame(Frame):
     
@@ -316,9 +319,10 @@ class DeckFrame(Frame):
     
     def create_deck(self) -> None:
         """according self.deck create imglabel"""      
-        self.create_discard_label(self.deck.cards[0])
-        for card in self.deck.cards[1:]:
+        
+        for card in self.deck.cards[:-1]:
             self.create_cardimg_label(card)
+        self.create_discard_label(self.deck.cards[-1])
             
     def create_card_back(self):
         card_back_img=Image.open("cards/cardback.png")
@@ -383,6 +387,12 @@ class DeckFrame(Frame):
         
         if self.topcard_position == position:
             self.topcard_position -=1
+            
+        
+
+                
+            
+            
         #print(self.deck.img_labels)
         card=self.deck.cards.pop(position)
         for label in self.deck.img_labels[position:]:
@@ -393,9 +403,27 @@ class DeckFrame(Frame):
         
         widget.destroy()
         print(card)
+        
+        #if topcard position<0 stock is empty so add discard to stock
+        self.shuffle_discard_to_stock()
+        
         state=RummyGameState.PLAYING
         self.update_state(state,card=card)
         self.state = state    
+    
+    
+    def shuffle_discard_to_stock(self):
+        if self.topcard_position >=0:
+            return
+        for widget in self.discard_pile.winfo_children():
+             widget.destroy()
+        self.deck.img_labels.clear()
+        last_card=self.deck.cards[-1]
+        self.deck.cards=self.deck.cards[:-1]
+        self.deck.shuffle()
+        self.deck.cards = self.deck.cards+[last_card]
+        self.create_deck()
+        
     
     def _deal_card(self) -> Card:
         """deal card from stock"""
@@ -410,7 +438,8 @@ class DeckFrame(Frame):
         self.topcard_position-=1
         #print(len(self.stock.children))
         #print(len(player.cards_labels))        
-        widget.destroy() 
+        widget.destroy()
+        self.shuffle_discard_to_stock()
         return card
     
     def _deal_card_from_discard(self) -> Card:
