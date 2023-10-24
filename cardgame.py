@@ -919,6 +919,8 @@ def find_layout_cards(cards: list[Card]) -> list[Card] | None:
     return result_cards
 
 def rummy_is_set(cards: list[Card]) -> bool:
+    if len(cards)<3:
+        return False
     valuelist=[card.value for card in cards]
     if len(set(valuelist))>1:
         return False
@@ -936,10 +938,6 @@ def cal_cost_rummy(cards: list[Card]) -> list[int]:
     cost_list =[]
     for card in cards:
         point=cal_base_point(card) + cal_run_point(card,set_card) + cal_set_point(card,set_card)
-        
-        # #print(id(card))
-        # print(card)
-        #point = cal_run_point(card,set_card)
         cost_list.append(point)
     return cost_list     
 
@@ -968,7 +966,14 @@ def cal_run_point(card: Card,cards:set[Card]) -> int:
         p_temp_card.name = get_name_by_value(card.value-1,flag=False)
     
     if temp_card in temp_cards or p_temp_card in temp_cards:
-        print(temp_card,p_temp_card)
+        
+        #if card is A or K the point reduce to 10 and 5
+        if card.value == 13:
+            return 5 
+        elif card.value == 1:
+            return 10
+        
+        # print(temp_card,p_temp_card)
         return 20
     
     if card.value < 12:
@@ -982,10 +987,17 @@ def cal_run_point(card: Card,cards:set[Card]) -> int:
         return 10
 
     return 0
-    
-    
+        
 def cal_base_point(card: Card) -> int:
-    return (10-card.value)   
+    return (14-card.value)
+
+def cal_rummy_score(cards: list[Card]) -> int:
+    score_list=[]
+    for card in cards:
+        if card.value >10:
+            score_list.append(10)
+        score_list.append(card.value)
+    return sum(score_list) 
 #*********************************
 #general function
 #*********************************

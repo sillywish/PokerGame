@@ -31,5 +31,11 @@
     cost=base point + set point +run point
     basepoint: 1-10 point, the more value the less point value >=10 point =1
     setpoint : has same set cards  10 point
-    runpoint : etc (9,10)pair 20 point , etc (7,9) 10 point
+    runpoint : etc (9,10)pair 20 point , etc (7,9) 10 point 
 修改CARD的symbol为property
+## 2023 10/24
+添加了message_frame 用于展示游戏内的消息
+tkinter 没有自带滚动条的Frame 因此创建了AutoScrollbar,AutoScrollbarAPP
+将meld_frame 修改为AutoScrollbarAPP类
+修改了一些COST的计算 对边缘的卡A K 减少权重uni
+添加了unittest.py 用于测试

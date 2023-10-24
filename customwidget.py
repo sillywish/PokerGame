@@ -64,6 +64,18 @@ DEFAULT_SIZE=FrameSize(
 #DEFAULT_SIZE=percent(DEFAULT_SIZE,percent=0.8)
 SM_SIZE=percent(DEFAULT_SIZE,percent=0.5)
 BG_SIZE=percent(DEFAULT_SIZE,percent=1.4)
+MELD_SIZE=FrameSize(
+        frame_width = 300,
+        frame_height = 150,
+        frame_bg = "green",
+        card_frame_width = 300,
+        card_frame_height = 130,
+        card_frame_bg = "green",
+        card_size = (75,109),
+        card_gap = 15,
+        card_top_gap = 10, 
+        title_font = ("courier", 7)      
+    )
 
 class PlayerFrame(Frame):
     def __init__(self, parent,player:Player,size=DEFAULT_SIZE):

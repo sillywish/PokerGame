@@ -1,43 +1,57 @@
-from tkinter import *
+#from tkinter import *
+import tkinter as tk
+import tkinter.scrolledtext as st 
 from tkinter import ttk,messagebox
 from enum import Enum,auto
 from cardgame import *
-from customwidget import PlayerFrame,SM_SIZE,DeckFrame,DEFAULT_SIZE
+from customwidget import PlayerFrame,SM_SIZE,DeckFrame,DEFAULT_SIZE,MELD_SIZE
+from usefulwidget import AutoScrollbarApp,ScrollbarApp
 
 
 
 
-class RummyGame(Frame):
+class RummyGame(tk.Frame):
     def __init__(self, parent,*args, **kwargs):
-        Frame.__init__(self, parent,*args, **kwargs)
+        tk.Frame.__init__(self, parent,*args, **kwargs)
         self.parent = parent
         self.computer = Player("Computer")
         self.player=Player()
         self.state = RummyGameState.DRAWCARD
-        self.frame_list: dict[str,PlayerFrame|DeckFrame]={}
+        self.frame_list: dict[str,PlayerFrame|DeckFrame|AutoScrollbarApp]={}
         self.meld_list: list[PlayerFrame]=[]
         #self.display=Player("display")
         
         
         
         computer_frame = PlayerFrame(self,self.computer)
-        computer_frame.grid(row=0)
+        computer_frame.grid(row=0,column=0)
         self.frame_list['computer_frame']=computer_frame
         
         stock =DeckFrame(self,self.update_state)
         stock.grid(row=1,column=0)
         self.frame_list['stock_frame']=stock
         
-        meld_frame = Frame(self,width=DEFAULT_SIZE.frame_width/2,height=DEFAULT_SIZE.frame_height*3,bg="blue")
-        meld_frame.grid(row=0,column=1,rowspan=3)
-        meld_frame.pack_propagate(False)
+        # meld_frame = Frame(self,width=DEFAULT_SIZE.frame_width/2,height=DEFAULT_SIZE.frame_height*2,bg="blue")
+        # meld_frame.grid(row=0,column=1,rowspan=2)
+        # meld_frame.pack_propagate(False)
+        
+        meld_frame = ScrollbarApp(self,width=DEFAULT_SIZE.frame_width/2,height=DEFAULT_SIZE.frame_height*2,bg="blue")
+        meld_frame.grid(row=0,column=1,rowspan=2,sticky=tk.N+tk.S+tk.E+tk.W)
+        
         self.frame_list['meld_frame']=meld_frame
-    
+        
+        message_frame = tk.Frame(self,width=DEFAULT_SIZE.frame_width/2,height=DEFAULT_SIZE.frame_height+50,bg="yellow")
+        message_frame.grid(row=2,column=1,rowspan=2)
+        message_frame.pack_propagate(False)
+        
+        self.messagebox=st.ScrolledText(message_frame,font = ("Times New Roman",20))
+        self.messagebox.pack()
+        
         player_frame=PlayerFrame(self,self.player)
-        player_frame.grid(row=2,)
+        player_frame.grid(row=2,column=0,sticky=tk.N)
         self.frame_list['player_frame']=player_frame
         
-        button_frame = Frame(self,width=DEFAULT_SIZE.frame_width,height=50)
+        button_frame = tk.Frame(self,width=DEFAULT_SIZE.frame_width,height=50,bg="black")
         button_frame.grid(row=3,column=0)
         #stock.current_player=player_frame 
         stock.deck.shuffle()
@@ -53,12 +67,12 @@ class RummyGame(Frame):
         # for _ in range(10):
         #     self.board._add_card(random_generate_card())
         # self.board.sort_imglabel()
-        self.meld_button=Button(button_frame,text="meld",command=self.play_cards)
-        self.meld_button.pack(side=LEFT)
-        self.layout_button=Button(button_frame,text="layout",command=self.layout)
-        self.layout_button.pack(side=LEFT)
-        self.button=Button(button_frame,text="discard",command=self.discard)
-        self.button.pack(side=LEFT)
+        self.meld_button=tk.Button(button_frame,text="meld",command=self.play_cards)
+        self.meld_button.pack(side="left")
+        self.layout_button=tk.Button(button_frame,text="layout",command=self.layout)
+        self.layout_button.pack(side="left")
+        self.button=tk.Button(button_frame,text="discard",command=self.discard)
+        self.button.pack(side="left")
 
     
     def discard(self):
@@ -118,17 +132,25 @@ class RummyGame(Frame):
     
     def show_winner(self) -> None:
         if len(self.frame_list['player_frame'].player.cards) == 0:
-            messagebox.showinfo("showinfo", "winner is player") 
+            score = cal_rummy_score(self.frame_list['computer_frame'].player.cards)
+            messagebox.showinfo("showinfo", f"winner is player score is {str(score)}") 
             
         else:
-            messagebox.showinfo("showinfo", "winner is computer") 
+            score = cal_rummy_score(self.frame_list['player_frame'].player.cards)
+            messagebox.showinfo("showinfo", f"winner is computer score is {str(score)}") 
             
-        
+    def update_messagebox(self,message:str) -> None:
+        self.messagebox.configure(state ='normal')
+        message+="\n" 
+        self.messagebox.insert(tk.END,message)
+        self.messagebox.see("end")
+        self.messagebox.configure(state ='disabled')   
     
     def update_state(self,state:RummyGameState,card: Card | None =None) -> None:
         if state == RummyGameState.PLAYING:
             self.meld_button.config(state="normal")
             self.button.config(state="normal")
+            self.layout_button.config(state="normal")
             self.frame_list['player_frame']._add_card(card)
             self.frame_list['player_frame'].sort_imglabel()
             self.state = RummyGameState.PLAYING 
@@ -137,6 +159,7 @@ class RummyGame(Frame):
             self.state = RummyGameState.DRAWCARD
             self.meld_button.config(state="disabled")
             self.button.config(state="disabled")
+            self.layout_button.config(state="disabled")
         elif state == RummyGameState.DISCARD:
             self.frame_list['stock_frame'].state =RummyGameState.DISCARD
             self.state = RummyGameState.DISCARD
@@ -172,6 +195,7 @@ class RummyGame(Frame):
             print(f"抽的是抽牌堆")
             card = self.frame_list["stock_frame"]._deal_card()
         print(f"computer deal {card}")
+        self.update_messagebox("-"*40)
         card.show=False
         self.frame_list["computer_frame"]._add_card(card)
         
@@ -216,6 +240,7 @@ class RummyGame(Frame):
         for card in play_card:
             card.show=True
         print(f"computer 有可以MELD的牌{play_card}")
+        self.update_messagebox(f"Computer meld {play_card}")
         self.create_setframe(played_card=play_card)         
         self.frame_list["computer_frame"].destroy_card_by_index(indexlist)
         self.frame_list["computer_frame"].reposition()
@@ -235,7 +260,8 @@ class RummyGame(Frame):
             for card in layout_cards[index][0]:
                 if card in self.frame_list["computer_frame"].player.cards:
                     card_index=self.frame_list["computer_frame"].player.cards.index(card)
-                    print(f"computer has {card} for lay out")
+                    print(f"computer has {card} for ")
+                    self.update_messagebox(f"Computer lay out {card}")
                     self.frame_list['computer_frame'].destroy_card_by_index([card_index])
                     self.frame_list["computer_frame"].reposition()
                     layout_cards[index][1]._add_card(card)
@@ -273,6 +299,7 @@ class RummyGame(Frame):
         discard=self.frame_list["computer_frame"].player.cards[discard_index]
         discard.show=True
         print(discard)
+        self.update_messagebox(f"Computer discard {discard}")
         self.frame_list['stock_frame'].create_discard_label(discard)
         self.frame_list['stock_frame'].deck.cards.append(discard)
         self.frame_list["computer_frame"].destroy_card_by_index([discard_index])
@@ -281,7 +308,7 @@ class RummyGame(Frame):
                                        
     def create_setframe(self,played_card):
         temp_set = Player()
-        set_frame=PlayerFrame(self.frame_list['meld_frame'],temp_set,size=SM_SIZE)
+        set_frame=PlayerFrame(self.frame_list['meld_frame'].interior,temp_set,size=MELD_SIZE)
         set_frame.title_label.pack_forget()
         set_frame.pack_propagate(True)
         for card in played_card:
@@ -289,16 +316,37 @@ class RummyGame(Frame):
         set_frame.sort_imglabel()
         
         set_frame.pack()
+        self.frame_list['meld_frame'].canvas.update_idletasks()
+        self.frame_list['meld_frame'].canvas.yview_moveto(1)
+        
         if len(played_card) == 4 and rummy_is_set(played_card):
             return
         self.meld_list.append(set_frame)   
 
+def center(win):
+    """
+    centers a tkinter window
+    :param win: the main window or Toplevel window to center
+    """
+    win.update_idletasks()
+    width = win.winfo_width()
+    frm_width = win.winfo_rootx() - win.winfo_x()
+    win_width = width + 2 * frm_width
+    height = win.winfo_height()
+    titlebar_height = win.winfo_rooty() - win.winfo_y()
+    win_height = height + titlebar_height + frm_width
+    x = win.winfo_screenwidth() // 2 - win_width // 2
+    y = win.winfo_screenheight() // 2 - win_height // 2
+    win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+    win.deiconify()
         
 if __name__ == "__main__":
-    root=Tk()
+    root=tk.Tk()
     
-    root.geometry("1200x1000")
+    
+    root.geometry("1200x950")
     RummyGame(root).pack(side="top", fill="both", expand=True)
+    center(root)
 
     root.mainloop()
       
