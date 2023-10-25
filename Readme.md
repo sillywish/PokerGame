@@ -39,3 +39,14 @@ tkinter 没有自带滚动条的Frame 因此创建了AutoScrollbar,AutoScrollbar
 将meld_frame 修改为AutoScrollbarAPP类
 修改了一些COST的计算 对边缘的卡A K 减少权重uni
 添加了unittest.py 用于测试
+## 2023 10/25
+优化了rummy 全部和判断run有关的算法 不使用numpy.diff
+重写了判断是否从弃牌抽牌的函数 优化了性能
+完成了游戏的重新开始功能
+添加rummystate.INIT 状态 用于游戏开始的初始化
+整合了PlayerFrame label 和 player 的reset 函数
+整合了DeckFrame 相关reset操作 为reset_deck 函数
+添加了统计分数的规则
+## 2023 10/26
+
+！！！！！！！！！有时玩家丢弃卡牌 电脑又可以组成meld时 会出现BUG 还在排查

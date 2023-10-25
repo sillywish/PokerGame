@@ -214,8 +214,7 @@ class BlackJackGame(Frame):
             self.widget_list["turn_label"].config(text=f"Turn {str(self.turn)}")
                        
         self.update_scoreboard()
-                                    
-                 
+                                                    
     def game_start(self):
         self.deck.shuffle()
         self.scoreboard.reset()

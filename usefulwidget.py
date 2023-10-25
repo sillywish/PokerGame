@@ -33,7 +33,22 @@ class ScrollbarApp(Frame):
             # Update the inner frame's width to fill the canvas.
             self.canvas.itemconfigure(self.interior_id, width=self.canvas.winfo_width())
             
-            
+    def clear_interior(self):
+        for widget in self.interior.winfo_children():
+            widget.destroy()
+        
+        self.canvas.yview_moveto(0)
+        self.canvas.update_idletasks()
+        self.canvas.config(scrollregion=(0, 0, 200,400))
+        #When you destroy the last widget within a frame, 
+        #the frame size is no longer managed by pack or grid. Therefore, 
+        #neither pack nor grid knows it is supposed to shrink the frame.
+        #simple way to resize is create a tmp widget with (1,1) size to shrink the frame
+        if len(self.interior.winfo_children()) == 0:
+            tmp = Frame(self.interior, width=1, height=1, borderwidth=0, highlightthickness=0)
+            tmp.pack()
+            self.interior.update_idletasks()
+            tmp.destroy()        
             
 class AutoScrollbarApp(Frame):
     def __init__(self, parent,*args, **kwargs):

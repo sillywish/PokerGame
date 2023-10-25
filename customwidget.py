@@ -87,7 +87,6 @@ class PlayerFrame(Frame):
         self.config(width=self.SIZE.frame_width,
                     height=self.SIZE.frame_height,
                     bg=self.SIZE.frame_bg,)
-        #self.config(width=800,height=290,bg="green")
         self.pack_propagate(False)
         self.title_label = Label(self,text=self.player.name,font=self.SIZE.title_font,bg="green")
         self.title_label.pack(pady=5)
@@ -96,7 +95,6 @@ class PlayerFrame(Frame):
                               height=self.SIZE.frame_height,
                               bg=self.SIZE.card_frame_bg,
                               bd=0,)      
-        #self.card_frame=Frame(self,width=800,height=240,bd=0,bg="red")
         self.card_frame.pack()
         
     
@@ -231,16 +229,14 @@ class PlayerFrame(Frame):
         """ 
         self.player.cards.append(card)
         self._create_cardimg_label(card)
-    
-      
+         
     def add_card(self,card:Card):
         """
         add card for easy rule game  
         """  
         self.player.cards.append(card)
         self.create_cardimg_label(card)
-
-        
+       
     def reposition(self) -> None:
         """
         repositon card imglabel and adjust Cardlabel.postion
@@ -281,8 +277,7 @@ class PlayerFrame(Frame):
         self.sort_imglabel()
         self.reposition()
         return cards_list
-        
-    
+            
     def destroy_card_by_index(self,index_list:list[int]) -> None:
         
         index_list.sort(reverse=True)
@@ -300,6 +295,11 @@ class PlayerFrame(Frame):
             cards_list.append(card_tuple[0])
         return cards_list
 
+    def reset(self) ->None:
+        """reset player cards and clear cardframe"""
+        self.player.reset_cards(flag=False)
+        self.clear_cardframe()
+        
 # class RummyDeck(Deck):
     
 #     def __init__(self) -> None:
@@ -317,13 +317,13 @@ class DeckFrame(Frame):
         self.state = RummyGameState.DRAWCARD
         self.SIZE = size
         self.update_state = update_state
-        self.picked_cards=[]
+        # self.picked_cards=[]
         self.topcard_position=None
         self.config(width=self.SIZE.frame_width,
                     height=self.SIZE.frame_height,
                     bg=self.SIZE.frame_bg,)
-        # self.pack(pady=10)
         self.pack_propagate(False)
+        
         self.stock = Frame(self,width=self.SIZE.frame_width/2,height=self.SIZE.frame_height,bg="red")
         self.stock.pack(side=LEFT)
         self.discard_pile = Frame(self,width=self.SIZE.frame_width/2,height=self.SIZE.frame_height,bg="black")
@@ -381,8 +381,7 @@ class DeckFrame(Frame):
         imglabel.place(x=-75,y=30,relx=0.5)
         imglabel.bind("<Button-1>",lambda event : self.deal_card(event))
         self.deck.img_labels.append(imglabel)
-          
-                
+                         
     def deal_card(self,event) -> None:
         """deal card funtion for click event"""
         widget = event.widget
@@ -422,21 +421,7 @@ class DeckFrame(Frame):
         state=RummyGameState.PLAYING
         self.update_state(state,card=card)
         self.state = state    
-    
-    
-    def shuffle_discard_to_stock(self):
-        if self.topcard_position >=0:
-            return
-        for widget in self.discard_pile.winfo_children():
-             widget.destroy()
-        self.deck.img_labels.clear()
-        last_card=self.deck.cards[-1]
-        self.deck.cards=self.deck.cards[:-1]
-        self.deck.shuffle()
-        self.deck.cards = self.deck.cards+[last_card]
-        self.create_deck()
-        
-    
+               
     def _deal_card(self) -> Card:
         """deal card from stock"""
         widget = self.deck.img_labels[self.topcard_position]
@@ -468,8 +453,45 @@ class DeckFrame(Frame):
         widget.destroy() 
         return card
     
-    def pass_to_discard(self,card:Card):
-        self.create_cardimg_label
+    def shuffle_discard_to_stock(self):
+        if self.topcard_position >=0:
+            return
+        for widget in self.discard_pile.winfo_children():
+             widget.destroy()
+        self.deck.img_labels.clear()
+        last_card=self.deck.cards[-1]
+        self.deck.cards=self.deck.cards[:-1]
+        self.deck.shuffle()
+        self.deck.cards = self.deck.cards+[last_card]
+        self.create_deck()
+    
+    def clear_frame(self, frame: Frame) -> None:
+        for widget in frame.winfo_children():
+             widget.destroy()
+                
+    def reset_deck(self):
+        """reset deck and clear stock and discard pile"""
+        self.deck.reset()
+        self.clear_frame(self.stock)
+        self.clear_frame(self.discard_pile)
+
+def center(win):
+    """
+    centers a tkinter window
+    :param win: the main window or Toplevel window to center
+    """
+    win.update_idletasks()
+    width = win.winfo_width()
+    frm_width = win.winfo_rootx() - win.winfo_x()
+    win_width = width + 2 * frm_width
+    height = win.winfo_height()
+    titlebar_height = win.winfo_rooty() - win.winfo_y()
+    win_height = height + titlebar_height + frm_width
+    x = win.winfo_screenwidth() // 2 - win_width // 2
+    y = win.winfo_screenheight() // 2 - win_height // 2
+    win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+    win.deiconify()
+       
               
 if __name__ == "__main__":
     root=Tk()

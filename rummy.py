@@ -4,7 +4,7 @@ import tkinter.scrolledtext as st
 from tkinter import ttk,messagebox
 from enum import Enum,auto
 from cardgame import *
-from customwidget import PlayerFrame,SM_SIZE,DeckFrame,DEFAULT_SIZE,MELD_SIZE
+from customwidget import PlayerFrame,SM_SIZE,DeckFrame,DEFAULT_SIZE,MELD_SIZE,center
 from usefulwidget import AutoScrollbarApp,ScrollbarApp
 
 
@@ -53,27 +53,43 @@ class RummyGame(tk.Frame):
         
         button_frame = tk.Frame(self,width=DEFAULT_SIZE.frame_width,height=50,bg="black")
         button_frame.grid(row=3,column=0)
-        #stock.current_player=player_frame 
-        stock.deck.shuffle()
         
-        for _ in range(10):
-            card=stock.deck.deal()
-            card.show=False
-            computer_frame._add_card(card)
-            player_frame._add_card(stock.deck.deal())
-        computer_frame.sort_imglabel()    
-        player_frame.sort_imglabel()
-        stock.create_deck()
-        # for _ in range(10):
-        #     self.board._add_card(random_generate_card())
-        # self.board.sort_imglabel()
         self.meld_button=tk.Button(button_frame,text="meld",command=self.play_cards)
         self.meld_button.pack(side="left")
         self.layout_button=tk.Button(button_frame,text="layout",command=self.layout)
         self.layout_button.pack(side="left")
-        self.button=tk.Button(button_frame,text="discard",command=self.discard)
-        self.button.pack(side="left")
+        self.discard_button=tk.Button(button_frame,text="discard",command=self.discard)
+        self.discard_button.pack(side="left")
+        self.restart_button=tk.Button(button_frame,text="restart",command=self.restart)
+        self.init_game()
+        self.update_state(RummyGameState.DRAWCARD)
+        
+        self.player.point=0
+        self.computer.point=0
+        self.frame_list['player_frame'].title_label.config(text=f"Player is {self.player.point}")
+        self.frame_list['computer_frame'].title_label.config(text=f"Computer is {self.computer.point}")
 
+    
+    def init_game(self):
+        """init game and deal 10 cards each for player and computer"""
+        self.frame_list['stock_frame'].deck.shuffle()
+        
+        #deal 10 cards each for player and computer  
+        for _ in range(10):
+            card=self.frame_list['stock_frame'].deck.deal()
+            card.show=False
+            self.frame_list['computer_frame']._add_card(card)
+            self.frame_list['player_frame']._add_card(self.frame_list['stock_frame'].deck.deal())
+        
+        #sorted cards imglabel and build stock_frame imglabel
+        self.frame_list['computer_frame'].sort_imglabel()    
+        self.frame_list['player_frame'].sort_imglabel()
+        self.frame_list['stock_frame'].create_deck()
+        
+        self.update_state(RummyGameState.INIT)
+        
+        
+        
     
     def discard(self):
         played_card: list[Card]=self.frame_list['player_frame'].destroy_picked_cards()
@@ -93,8 +109,9 @@ class RummyGame(tk.Frame):
         
         played_card = self.frame_list['player_frame'].destroy_picked_cards()
         self.create_setframe(played_card)
-        if not self.check_goout():
-            self.update_state(RummyGameState.DISCARD)
+        # if not self.check_goout():
+        #     self.update_state(RummyGameState.DISCARD)
+        self.check_goout()
     
     def layout(self):
         layout_cards :list[tuple[list[Card],PlayerFrame]]= []
@@ -122,8 +139,7 @@ class RummyGame(tk.Frame):
             self.meld_list.pop(del_index)
         
         self.check_goout()
-            
-    
+               
     def check_goout(self) -> bool:
         if  len(self.frame_list['player_frame'].player.cards) == 0 or len(self.frame_list['computer_frame'].player.cards) == 0:
             self.update_state(RummyGameState.GOOUT)
@@ -132,12 +148,15 @@ class RummyGame(tk.Frame):
     
     def show_winner(self) -> None:
         if len(self.frame_list['player_frame'].player.cards) == 0:
-            score = cal_rummy_score(self.frame_list['computer_frame'].player.cards)
-            messagebox.showinfo("showinfo", f"winner is player score is {str(score)}") 
+            # score = cal_rummy_score(self.frame_list['computer_frame'].player.cards)
+            # messagebox.showinfo("showinfo", f"winner is player score is {str(score)}")
+            self.update_score()
             
         else:
-            score = cal_rummy_score(self.frame_list['player_frame'].player.cards)
-            messagebox.showinfo("showinfo", f"winner is computer score is {str(score)}") 
+            # score = cal_rummy_score(self.frame_list['player_frame'].player.cards)
+            # messagebox.showinfo("showinfo", f"winner is computer score is {str(score)}")
+            self.update_score(flag=False) 
+        self.update_state(RummyGameState.SCORE)
             
     def update_messagebox(self,message:str) -> None:
         self.messagebox.configure(state ='normal')
@@ -146,10 +165,25 @@ class RummyGame(tk.Frame):
         self.messagebox.see("end")
         self.messagebox.configure(state ='disabled')   
     
+    def update_score(self,flag=True) -> None:
+        """flag=true player win"""
+        if flag:
+            score = cal_rummy_score(self.frame_list['computer_frame'].player.cards)
+            self.player.point+=score
+            self.frame_list['player_frame'].title_label.config(text=f"Player is {self.player.point}")
+            messagebox.showinfo("showinfo", f"winner is player score is {str(score)}")
+        else:
+            score = cal_rummy_score(self.frame_list['player_frame'].player.cards)
+            self.computer.point+=score
+            self.frame_list['computer_frame'].title_label.config(text=f"Computer is {self.computer.point}")
+            messagebox.showinfo("showinfo", f"winner is computer score is {str(score)}")
+                
+
+    
     def update_state(self,state:RummyGameState,card: Card | None =None) -> None:
         if state == RummyGameState.PLAYING:
             self.meld_button.config(state="normal")
-            self.button.config(state="normal")
+            self.discard_button.config(state="normal")
             self.layout_button.config(state="normal")
             self.frame_list['player_frame']._add_card(card)
             self.frame_list['player_frame'].sort_imglabel()
@@ -158,44 +192,51 @@ class RummyGame(tk.Frame):
             self.frame_list['stock_frame'].state =RummyGameState.DRAWCARD
             self.state = RummyGameState.DRAWCARD
             self.meld_button.config(state="disabled")
-            self.button.config(state="disabled")
+            self.discard_button.config(state="disabled")
             self.layout_button.config(state="disabled")
-        elif state == RummyGameState.DISCARD:
-            self.frame_list['stock_frame'].state =RummyGameState.DISCARD
-            self.state = RummyGameState.DISCARD
-            self.button.config(state="normal")
-            self.meld_button.config(state="disabled")
+        # elif state == RummyGameState.DISCARD:
+        #     self.frame_list['stock_frame'].state =RummyGameState.DISCARD
+        #     self.state = RummyGameState.DISCARD
+        #     self.discard_button.config(state="normal")
+        #     self.meld_button.config(state="disabled")
         elif state == RummyGameState.GOOUT:
             self.frame_list['stock_frame'].state =RummyGameState.GOOUT
             self.state = RummyGameState.GOOUT
             self.show_winner()
-
-            
-        #self.board.picked_cards.clear()
-        # for card in played_card:
-        #     self.displsyboard._add_card(card)
-            
+        elif state == RummyGameState.SCORE:
+            self.frame_list['stock_frame'].state =RummyGameState.SCORE
+            self.state = RummyGameState.SCORE
+            self.reset_all_widget()
+            self.meld_button.pack_forget()
+            self.discard_button.pack_forget()
+            self.layout_button.pack_forget()
+            self.restart_button.pack()
+        
+        elif state == RummyGameState.INIT:
+            self.frame_list['stock_frame'].state =RummyGameState.INIT
+            self.state = RummyGameState.INIT
+            self.restart_button.pack_forget()
+            self.meld_button.pack(side="left")
+            self.layout_button.pack(side="left")
+            self.discard_button.pack(side="left")
+                       
     def computer_moves(self):
         
         #deal_card
+        self.update_messagebox("-"*40)
         card = None
         discard_card = self.frame_list["stock_frame"].deck.cards[-1]
-        temp_cards=self.frame_list["computer_frame"].player.cards.copy()
-        temp_cards.append(discard_card)
-        print(temp_cards)
-        deal_test = RummyAI(temp_cards)
-        deal_test.cards=sorted(temp_cards,key=lambda x:x.num)
-        if deal_test.has_run():
+        
+        if evaluate_discard(discard_card,self.frame_list["computer_frame"].player.cards):
             card = self.frame_list["stock_frame"]._deal_card_from_discard()
-        deal_test.cards=sorted(temp_cards,key=lambda x:x.value)
-        if deal_test.has_set():
-            card = self.frame_list["stock_frame"]._deal_card_from_discard()
-        # print(id(self.frame_list["computer_frame"].player.cards))
-        if card is None:
+            self.update_messagebox(f"Computer deal {card} from discard pile")
+        else:
             print(f"抽的是抽牌堆")
             card = self.frame_list["stock_frame"]._deal_card()
+            self.update_messagebox(f"Computer deal card from stock")
+        
         print(f"computer deal {card}")
-        self.update_messagebox("-"*40)
+        
         card.show=False
         self.frame_list["computer_frame"]._add_card(card)
         
@@ -305,6 +346,20 @@ class RummyGame(tk.Frame):
         self.frame_list["computer_frame"].destroy_card_by_index([discard_index])
         self.frame_list["computer_frame"].reposition()
     
+    def reset_all_widget(self):
+        self.frame_list['stock_frame'].reset_deck()
+        self.frame_list['player_frame'].reset()
+        self.frame_list['computer_frame'].reset()
+        self.meld_list.clear()
+        self.frame_list['meld_frame'].clear_interior()
+        
+        
+    def restart(self):
+        
+        self.init_game()
+        self.update_state(RummyGameState.DRAWCARD)
+        
+        
                                        
     def create_setframe(self,played_card):
         temp_set = Player()
@@ -323,22 +378,7 @@ class RummyGame(tk.Frame):
             return
         self.meld_list.append(set_frame)   
 
-def center(win):
-    """
-    centers a tkinter window
-    :param win: the main window or Toplevel window to center
-    """
-    win.update_idletasks()
-    width = win.winfo_width()
-    frm_width = win.winfo_rootx() - win.winfo_x()
-    win_width = width + 2 * frm_width
-    height = win.winfo_height()
-    titlebar_height = win.winfo_rooty() - win.winfo_y()
-    win_height = height + titlebar_height + frm_width
-    x = win.winfo_screenwidth() // 2 - win_width // 2
-    y = win.winfo_screenheight() // 2 - win_height // 2
-    win.geometry('{}x{}+{}+{}'.format(width, height, x, y))
-    win.deiconify()
+
         
 if __name__ == "__main__":
     root=tk.Tk()

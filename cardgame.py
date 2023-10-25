@@ -1,6 +1,8 @@
 import random
 import numpy as np
 import os
+from time import time
+
 from functools import cache
 from enum import Enum,auto
 from copy import deepcopy
@@ -172,10 +174,16 @@ class Deck:
         return self.cards.pop()
 
 class RummyDeck(Deck):
+    """rummy game deck
+       
+       diff:\n
+       1.Ace value is 1 \n
+       2.Has imglabel list to store tk img label
+    
+    """
     __suits = SUITS
     __values = RUMMY_VALUES
-    
-    
+      
     def __init__(self) -> None:
         self.cards=[]
 
@@ -188,13 +196,15 @@ class RummyDeck(Deck):
         #self.discard_label : list[CardLabel]=[]
         
     def reset(self):
+        """rebuild a 52 cards deck and clear imglabel widget"""
         self.cards=[]        
         for suit in self.__suits:
             for name in self.__values:
  
                 card=RummyCard(suit,self.__values[name],name) 
                 self.cards.append(card)
-    
+
+        self.img_labels.clear()
     
         
         
@@ -219,9 +229,13 @@ class Player:
     def final_cat(self):
         return f"{self.name} is {self.category}"
 
-    def reset_cards(self):
+    def reset_cards(self,flag: bool=True):
+        """clear all cards and relative object
+           if flag=False not clear cards_img
+        """
         self.cards.clear()
-        self.cards_img.clear()
+        if flag:
+            self.cards_img.clear()
         self.cards_labels.clear()
         self.category = "Unkonw"
 
@@ -456,6 +470,7 @@ class RummyGameState(Enum):
     DISCARD = auto()
     GOOUT = auto()
     SCORE = auto()
+    INIT = auto()
     
 class CardLabel(Label):
     def __init__(self,parent,card,position,*args, **kwargs):
@@ -478,40 +493,37 @@ class RummyAI:
       
     def has_set(self) -> None | list[int]:
         """默认cards已经根据value排序"""
-        index= 1
-        count=1
-        has_set=False
-        startindex=0
+        
+        count = 1
+        start = 0
+        end = 1
         result_set=None
         current_value= self.values[0]
         for value in self.values[1:]:
             if value == current_value:
                 count+=1
                 if count >=3:
-                    has_set=True
-                    result_set=[i for i in range(startindex,index+1)]
+                    result_set=[i for i in range(start,end+1)]
             else:
-                current_value = value
-                startindex = index
-                if has_set:
+                if result_set:
                     break
-                count=1
-            index+=1 
-                
-        
+                current_value = value
+                start = end
+                count = 1
+            end+=1 
+                       
         return result_set
     
-    def has_run(self) -> None| list[int]:
-        """默认列表已经根据card.num进行排序 并且没有重复元素"""
+    def _has_run(self) -> None| list[int]:
+        """默认列表已经根据card.num进行排序 并且没有重复元素
+           使用np diff 判断 连续性 
+        """
         startindex=0
         index=3
         result_run = None
         while index<=len(self.nums):
             if self.checkConsecutive(self.nums[startindex:index]):
                     result_run = [i for i in range(startindex,index)]
-                    # if index-startindex==4:
-                        
-                    #     break
                     index+=1
             else:
                 if result_run:
@@ -519,6 +531,28 @@ class RummyAI:
                 startindex+=1
                 index+=1
         #print("调用一次 has_run 函数")
+                
+        return result_run
+    
+    def has_run(self) -> None| list[int]:
+        """默认列表已经根据card.num进行排序 并且没有重复元素
+           直接计算Card.num 的GAP 来判断连续性 时间复杂度为O(N)
+        """
+        start=0
+        end=2
+        result_run = None
+        while end<=len(self.nums)-1:
+            
+            gap=(self.nums[end]-self.nums[start])/(end-start)
+            
+            if gap == 1:
+                result_run = [i for i in range(start,end+1)]
+                end+=1
+            else:
+                if result_run:
+                    break
+                start+=1
+                end+=1
                 
         return result_run
  
@@ -926,12 +960,51 @@ def rummy_is_set(cards: list[Card]) -> bool:
         return False
     return True
 
+# old algorithm use np.diff check consecutive
+# def _rummy_is_run(cards: list[Card]) -> bool:
+#     if len(cards)<3:
+#         return False
+#     cards.sort(key=lambda x:x.num)
+#     return checkConsecutive([card.num for card in cards])
+
+
 def rummy_is_run(cards: list[Card]) -> bool:
     if len(cards)<3:
         return False
     cards.sort(key=lambda x:x.num)
-    return checkConsecutive([card.num for card in cards])
+    gap = (cards[-1].num - cards[0].num)/(len(cards)-1)
+    return gap == 1
+     
+def evaluate_discard(card: Card, hands: list[Card]) -> bool:
+    valuelist=sorted_by_value(hands)
+    target_value=card.value
+    target_index = binary_search(target_value,valuelist)
+    # check whether can find two same value cards that can be combine as rummy set
+    if target_index is not None:     
+        if target_index+1 <len(hands) and valuelist[target_index+1] == target_value:
+            return True       
+        if target_index-1 >=0 and valuelist[target_index-1] == target_value:
+            return True
+        # seconed way is call binary_search again
+        # valuelist.pop(target_index)
+        # if binary_search(target_value,valuelist) is not None:
+        #     return True
+      
+    numlist = sorted_by_num(hands)
+    num_set = set(numlist)
+    #three possible that can be combine as rummy run
+    if card.num+1 in num_set and card.num+2 in num_set:
+        return True
+    elif card.num+1 in num_set and card.num-1 in num_set:
+        return True
+    elif card.num-1 in num_set and card.num-2 in num_set:
+        return True
+
+    return False
+    
        
+
+     
 def cal_cost_rummy(cards: list[Card]) -> list[int]:
     set_card= set(cards)
     #print(set_card)
@@ -984,6 +1057,9 @@ def cal_run_point(card: Card,cards:set[Card]) -> int:
         p_temp_card.name = get_name_by_value(card.value-2,flag=False)
         
     if temp_card in temp_cards or p_temp_card in temp_cards:
+        #if card is A or K the point reduce to 10 and 5
+        if card.value == 13 or card.value == 1:
+            return 0      
         return 10
 
     return 0
@@ -996,18 +1072,19 @@ def cal_rummy_score(cards: list[Card]) -> int:
     for card in cards:
         if card.value >10:
             score_list.append(10)
-        score_list.append(card.value)
+        else:
+            score_list.append(card.value)
     return sum(score_list) 
 #*********************************
 #general function
 #*********************************
 
 def sorted_by_value(cards: list[Card]) -> list[int]:
-    """return list of sorted value of card"""
+    """return list of sorted value of the card"""
     return sorted([card.value for card in cards])
 
 def sorted_by_num(cards: list[Card]) -> list[int]:
-    """return list of sorted num of card"""
+    """return list of sorted num of the card"""
     return sorted([card.num for card in cards])
 
 def generate_symbol(value_name: str,suit: str, flag =True) -> str:
@@ -1035,36 +1112,69 @@ def get_name_by_value(value: int, flag =True) -> str:
             return name 
         
 def checkConsecutive(cards_value:list[int]) ->bool:
+    """use np.diff """
         ##ace can be 1 or 14
     if len(set(cards_value))!=len(cards_value):
         return False
     n = len(cards_value) - 1
-    return (sum(np.diff(cards_value) == 1) >= n)  
-        
+    return (sum(np.diff(cards_value) == 1) >= n)
+   
+def binary_search(target: int,arr: list) -> int | None:
+    start=0
+    end = len(arr) - 1
+    while start <= end:
+        mid =(start+end)//2
+        if target < arr[mid]:
+            end= mid-1
+        elif target > arr[mid]:
+            start = mid +1
+        else:
+            return mid
+    return None    
+       
 if __name__ == "__main__":
 
-
+    arry = [1,2,3,4,4,5]
+    
+    print(binary_search(1,arry))
     
     #main()
     #one_vs_one()
        
-    deck=RummyDeck()
-    a=Player()
-    deck.shuffle()
-    # #card=random_generate_card()
-    for _ in range(10):
-        #a.cards.append(random_generate_card())
-        a.cards.append(deck.deal())
-    #a.cards=random_generate_straight(length=3)
-    #a.sortedcards_by_num()
-    #random.shuffle(a.cards)
-    a.sortedcards()
-    print(a)
-    print(cal_cost_rummy(a.cards))
-    #print(find_layout_cards(a.cards))
-    #print(rummy_is_run(a.cards))
+    # deck=RummyDeck()
+    # a=Player()
+    # deck.shuffle()
+    # # #card=random_generate_card()
+    # # for _ in range(10):
+    # #     #a.cards.append(random_generate_card())
+    # #     a.cards.append(deck.deal())
+    # a.cards=random_generate_straight(length=3)
+    # test_list1 = [Card(suit='clubs',value=2,name="Two"),  
+    #               Card(suit='hearts',value=2,name="Two"),
+    #               Card(suit='hearts',value=3,name="Three"),
+    #               Card(suit='hearts',value=4,name="Four"),
+    #               Card(suit='hearts',value=6,name="Six"),
+    #               ]
+    # #a.cards = test_list1    
+    # a.sortedcards_by_num()
+    
+    # #random.shuffle(a.cards)
+    # #a.sortedcards()
+    # print(a)
+    # #print(cal_cost_rummy(a.cards))
+    # #print(find_layout_cards(a.cards))
+    # #print(rummy_is_run(a.cards))
     # test = RummyAI(hands=a.cards)
-    # print(test.has_run())
+    # nums = 10000
+    # starttime = time()
+    # for i in range(nums):
+    #     test.has_run()
+    # print(f"old use time {time()-starttime}")
+    
+    # starttime = time()
+    # for i in range(nums):
+    #     test._has_run()
+    # print(f"new use time {time()-starttime}")
     # print(find_layout_cards(a.cards))
     # print(a)
     
