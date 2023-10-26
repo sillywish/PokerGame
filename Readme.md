@@ -1,5 +1,27 @@
 # Pokergame
 ## deverlopment log
+### basic rummy bot logic
+    **drawcard state**: 
+    evaluate the card from discard pile 
+    if card can be set or run with hand 
+        draw the card from discard pile
+    else 
+        draw from the stock pile
+
+    **play state**:
+    first check hands whether there is a run or set then meld all set and run 
+    second check hans whether there is a card can be lay out then lay out all cards
+
+    **discard state**:
+    evaluate evey cards in hands and discard the min point card
+    the card point follow rule below :
+    cost = base point + set point +run point
+    basepoint: 52 - 4 X card.value point  (the lower value the higher point)
+                etc A -> 48 point, 5 -> 32 point Q -> 4 point
+    setpoint : has same set cards 10 point
+    runpoint : etc (9,10) pair 20 point , etc (7,9) 10 point 
+               because A and K is the bounder so only get 10 point and 0 point
+
 ## 2023 10/12 
 修改PlayerFrame 添加了生成复杂手牌的功能，优化了之前的功能函数
 生成CardLabel和CardState类 完成纸牌的一些事件操作
@@ -48,5 +70,10 @@ tkinter 没有自带滚动条的Frame 因此创建了AutoScrollbar,AutoScrollbar
 整合了DeckFrame 相关reset操作 为reset_deck 函数
 添加了统计分数的规则
 ## 2023 10/26
+电脑MELD时 完成GOOUT 会出现BUG多次判断（已经修复->重新更改了判断GOOUT状态的位置）
+删除了多余的SCORE状态 将其功能整合在GOOUT中执行
+修改了discard point 的Base point 将整体区间放大增大每张牌value得分的价值
+修复了一些选择卡时的BUG
 
-！！！！！！！！！有时玩家丢弃卡牌 电脑又可以组成meld时 会出现BUG 还在排查
+## 2023 10/27
+!!!!进行最后的UI调整

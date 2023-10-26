@@ -469,7 +469,6 @@ class RummyGameState(Enum):
     PLAYING = auto()
     DISCARD = auto()
     GOOUT = auto()
-    SCORE = auto()
     INIT = auto()
     
 class CardLabel(Label):
@@ -1065,7 +1064,7 @@ def cal_run_point(card: Card,cards:set[Card]) -> int:
     return 0
         
 def cal_base_point(card: Card) -> int:
-    return (14-card.value)
+    return (52-card.value*4)
 
 def cal_rummy_score(cards: list[Card]) -> int:
     score_list=[]

@@ -103,9 +103,9 @@ class PlayerFrame(Frame):
         card_back_img=card_back_img.resize(self.SIZE.card_size)
         card_img = ImageTk.PhotoImage(card_back_img)
         self.player.cards_img["card"] = card_img
-        
-    #使用pack()部署卡片图片使用于简单的游戏规则  
+         
     def create_cardimg_label(self,card:Card,flag:bool=True):
+        """使用pack()部署卡片图片使用于简单的游戏规则"""
         
         if "card" not in self.player.cards_img:
             self.create_card_back()
@@ -130,8 +130,7 @@ class PlayerFrame(Frame):
         if not card.show and flag:
             imglabel.bind("<Button-1>",lambda event : self._display_card(event))
         self.player.cards_labels.append(imglabel) 
-    
-    #使用place()部署卡片图片使用于复杂的游戏规则          
+           
     def _create_cardimg_label(self,card:Card,flag:bool=True):
         """使用place()部署卡片图片使用于复杂的游戏规则 """
         
@@ -217,11 +216,14 @@ class PlayerFrame(Frame):
             
             label.card=player_sortedcards[0]
             label.position=position
+            label.state = CardState.NORMAL
             position+=1
             if label.card.show:
                 key=player_sortedcards[0].symbol
                 label.config(image=self.player.cards_img[key])
             player_sortedcards.pop(0)
+            
+        self.picked_cards.clear()
     
     def _add_card(self,card:Card,):
         """
@@ -249,6 +251,7 @@ class PlayerFrame(Frame):
             label.place_forget()
             label.place(x=startpoint,relx=0.5,y=self.SIZE.card_top_gap)
             label.position=position
+            #label.state = CardState.NORMAL
             position+=1
             #startpoint+=30
             startpoint+=self.SIZE.card_gap  
@@ -359,7 +362,7 @@ class DeckFrame(Frame):
         self.topcard_position = position
         imglabel=CardLabel(self.stock,card=card,position=position,image=card_img,)
         x_piont = -int(self.SIZE.card_size[0]/2)
-        imglabel.place(x=x_piont,y=30,relx=0.5)
+        imglabel.place(x=x_piont,y=40,relx=0.5)
         
         #if flag is true add event when click img can flip over
         # if not card.show and flag:
@@ -378,7 +381,7 @@ class DeckFrame(Frame):
             
         position = len(self.deck.img_labels)
         imglabel=CardLabel(self.discard_pile,card=card,position=position,image=card_img,)
-        imglabel.place(x=-75,y=30,relx=0.5)
+        imglabel.place(x=-75,y=40,relx=0.5)
         imglabel.bind("<Button-1>",lambda event : self.deal_card(event))
         self.deck.img_labels.append(imglabel)
                          
@@ -398,11 +401,7 @@ class DeckFrame(Frame):
         
         if self.topcard_position == position:
             self.topcard_position -=1
-            
-        
-
-                
-            
+               
             
         #print(self.deck.img_labels)
         card=self.deck.cards.pop(position)
