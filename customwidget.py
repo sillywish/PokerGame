@@ -1,81 +1,13 @@
 from tkinter import *
-from tkinter import ttk
-
-from dataclasses import dataclass
-
+from config import DEFAULT_SIZE,MD_SIZE
 from PIL import Image, ImageTk
 from cardgame import *
 from copy import deepcopy
 from cardgame import Card, Player
 
-@dataclass
-class FrameSize:
-    frame_width: int 
-    frame_height: int
-    frame_bg: str
-    card_frame_width: int
-    card_frame_height: int
-    card_frame_bg: str
-    card_size: tuple[int,int]
-    card_gap: int
-    card_top_gap: int
-    title_font: tuple
-    # stock_width: int
-    # stock_height: int
+
     
-    
-def percent(default:FrameSize,percent) ->FrameSize:
-    frame_width = percent * default.frame_width
-    frame_height = percent * default.frame_height
-    card_frame_width = percent * default.card_frame_width
-    card_frame_height = percent * default.card_frame_height
-    card_size = tuple([int(i*percent) for i in default.card_size])
-    card_gap = percent * default.card_gap
-    card_top_gap = percent * default.card_top_gap
-    frame_bg = default.frame_bg
-    card_frame_bg = default.card_frame_bg
-    title_font = (default.title_font[0], int(default.title_font[1]*percent))
-    
-    return FrameSize(
-        frame_width = frame_width,
-        frame_height = frame_height,
-        frame_bg = frame_bg,
-        card_frame_width = card_frame_width,
-        card_frame_height = card_frame_height,
-        card_frame_bg = card_frame_bg,
-        card_size = card_size,
-        card_gap = card_gap,
-        card_top_gap = card_top_gap,
-        title_font = title_font                
-    )
-    
-DEFAULT_SIZE=FrameSize(
-        frame_width = 800,
-        frame_height = 300,
-        frame_bg = "green",
-        card_frame_width = 800,
-        card_frame_height = 260,
-        card_frame_bg = "green",
-        card_size = (150,218),
-        card_gap = 30,
-        card_top_gap = 20, 
-        title_font = ("courier", 15)      
-    )
-#DEFAULT_SIZE=percent(DEFAULT_SIZE,percent=0.8)
-SM_SIZE=percent(DEFAULT_SIZE,percent=0.5)
-BG_SIZE=percent(DEFAULT_SIZE,percent=1.4)
-MELD_SIZE=FrameSize(
-        frame_width = 300,
-        frame_height = 150,
-        frame_bg = "green",
-        card_frame_width = 300,
-        card_frame_height = 130,
-        card_frame_bg = "green",
-        card_size = (75,109),
-        card_gap = 15,
-        card_top_gap = 10, 
-        title_font = ("courier", 7)      
-    )
+
 
 class PlayerFrame(Frame):
     def __init__(self, parent,player:Player,size=DEFAULT_SIZE):
@@ -89,7 +21,7 @@ class PlayerFrame(Frame):
                     bg=self.SIZE.frame_bg,)
         self.pack_propagate(False)
         self.title_label = Label(self,text=self.player.name,font=self.SIZE.title_font,bg="green")
-        self.title_label.pack(pady=5)
+        self.title_label.pack()
         self.card_frame=Frame(self,
                               width=self.SIZE.card_frame_width,
                               height=self.SIZE.frame_height,
@@ -148,12 +80,12 @@ class PlayerFrame(Frame):
             card_img = self.player.cards_img["card"] 
             
         position = len(self.player.cards)-1
-        imglabel=CardLabel(self.card_frame,card=card,position=position,image=card_img,)
+        imglabel=CardLabel(self.card_frame,card=card,position=position,image=card_img,bg='black')
         
         #if flag is true add event when click img can flip over
         # if not card.show and flag:
         #     imglabel.bind("<Button-1>",lambda event : self._display_card(event))
-        if card.show:
+        if card.show and flag:
             imglabel.bind("<Button-1>",lambda event : self.get_card_obj(event))
         self.player.cards_labels.append(imglabel)        
         self.reposition()
@@ -225,12 +157,12 @@ class PlayerFrame(Frame):
             
         self.picked_cards.clear()
     
-    def _add_card(self,card:Card,):
+    def _add_card(self,card:Card,flag=True):
         """
         add card for complex rule game
         """ 
         self.player.cards.append(card)
-        self._create_cardimg_label(card)
+        self._create_cardimg_label(card,flag)
          
     def add_card(self,card:Card):
         """
@@ -313,7 +245,7 @@ class PlayerFrame(Frame):
 
 class DeckFrame(Frame):
     
-    def __init__(self, parent,update_state,size=DEFAULT_SIZE):
+    def __init__(self, parent,update_state,size=MD_SIZE):
         Frame.__init__(self, parent)
         self.parent = parent
         self.deck = RummyDeck()
@@ -327,17 +259,23 @@ class DeckFrame(Frame):
                     bg=self.SIZE.frame_bg,)
         self.pack_propagate(False)
         
-        self.stock = Frame(self,width=self.SIZE.frame_width/2,height=self.SIZE.frame_height,bg="red")
-        self.stock.pack(side=LEFT)
-        self.discard_pile = Frame(self,width=self.SIZE.frame_width/2,height=self.SIZE.frame_height,bg="black")
-        self.discard_pile.pack(side=LEFT)
-    
+        self.stock_title = Label(self,text=f"Card remain : 52",bg="green")
+        self.stock_title.grid(row=0,column=0)
+        self.stock = Frame(self,width=self.SIZE.frame_width/2,height=self.SIZE.frame_height-10,bg="green")
+        self.stock.grid(row=1,column=0)
+        self.discard_title = Label(self,text=f"Card remain : 0",bg="green")
+        self.discard_title.grid(row=0,column=1)
+        self.discard_pile = Frame(self,width=self.SIZE.frame_width/2,height=self.SIZE.frame_height-10,bg="green")
+        self.discard_pile.grid(row=1,column=1)
+        
     def create_deck(self) -> None:
         """according self.deck create imglabel"""      
         
         for card in self.deck.cards[:-1]:
             self.create_cardimg_label(card)
         self.create_discard_label(self.deck.cards[-1])
+        
+        self.update_stock_titles()
             
     def create_card_back(self):
         card_back_img=Image.open("cards/cardback.png")
@@ -360,9 +298,9 @@ class DeckFrame(Frame):
            
         position = len(self.deck.img_labels)
         self.topcard_position = position
-        imglabel=CardLabel(self.stock,card=card,position=position,image=card_img,)
+        imglabel=CardLabel(self.stock,card=card,position=position,image=card_img,bg='black')
         x_piont = -int(self.SIZE.card_size[0]/2)
-        imglabel.place(x=x_piont,y=40,relx=0.5)
+        imglabel.place(x=x_piont,y=self.SIZE.card_top_gap,relx=0.5)
         
         #if flag is true add event when click img can flip over
         # if not card.show and flag:
@@ -380,10 +318,13 @@ class DeckFrame(Frame):
             card_img = self.deck.cards_img[card.symbol]
             
         position = len(self.deck.img_labels)
-        imglabel=CardLabel(self.discard_pile,card=card,position=position,image=card_img,)
-        imglabel.place(x=-75,y=40,relx=0.5)
+        imglabel=CardLabel(self.discard_pile,card=card,position=position,image=card_img,bg='black')
+        x_piont = -int(self.SIZE.card_size[0]/2)
+        imglabel.place(x=x_piont,y=self.SIZE.card_top_gap,relx=0.5)
         imglabel.bind("<Button-1>",lambda event : self.deal_card(event))
         self.deck.img_labels.append(imglabel)
+        
+        self.update_discard_titles()
                          
     def deal_card(self,event) -> None:
         """deal card funtion for click event"""
@@ -413,7 +354,8 @@ class DeckFrame(Frame):
         
         widget.destroy()
         print(card)
-        
+        self.update_stock_titles()
+        self.update_discard_titles()
         #if topcard position<0 stock is empty so add discard to stock
         self.shuffle_discard_to_stock()
         
@@ -435,6 +377,7 @@ class DeckFrame(Frame):
         #print(len(self.stock.children))
         #print(len(player.cards_labels))        
         widget.destroy()
+        self.update_stock_titles()
         self.shuffle_discard_to_stock()
         return card
     
@@ -449,7 +392,8 @@ class DeckFrame(Frame):
         for label in self.deck.img_labels[position:]:
             label.position-=1
         self.deck.img_labels.pop(position)     
-        widget.destroy() 
+        widget.destroy()
+        self.update_discard_titles()
         return card
     
     def shuffle_discard_to_stock(self):
@@ -467,12 +411,27 @@ class DeckFrame(Frame):
     def clear_frame(self, frame: Frame) -> None:
         for widget in frame.winfo_children():
              widget.destroy()
+             
+    def update_stock_titles(self):
+        self.stock_title.config(text=f"Card remain : {self.topcard_position+1}")
+    
+    def update_discard_titles(self):
+        self.discard_title.config(text=f"Card remain : {self.deck.num_of_crads()-self.topcard_position-1}")
                 
     def reset_deck(self):
         """reset deck and clear stock and discard pile"""
         self.deck.reset()
         self.clear_frame(self.stock)
         self.clear_frame(self.discard_pile)
+
+class RummyText(Text):
+    def __init__(self,parent,*args, **kwargs):
+        Text.__init__(self,parent,*args, **kwargs)
+        self.config(font="Helvetica 15")
+        self.tag_configure("Computer",foreground="black",font="Helvetica 15")
+        self.tag_configure("Moves",foreground="red",font="Helvetica 15")
+        self.tag_configure("Cards",foreground="red",font="Helvetica 15 bold")
+
 
 def center(win):
     """

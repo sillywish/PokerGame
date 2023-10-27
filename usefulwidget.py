@@ -51,12 +51,19 @@ class ScrollbarApp(Frame):
             tmp.destroy()        
             
 class AutoScrollbarApp(Frame):
-    def __init__(self, parent,*args, **kwargs):
+    def __init__(self, parent,width,height,*args, **kwargs):
         Frame.__init__(self, parent,*args, **kwargs)
+        
+
         
         self.scrollbar = AutoScrollbar(self) 
         self.scrollbar.grid(row=0, column=1, sticky=N+S) 
-        self.canvas = Canvas(self,highlightthickness=0,yscrollcommand=self.scrollbar.set) 
+        self.canvas = Canvas(self,
+                             highlightthickness=0,
+                             width=width,
+                             height=height,
+                             yscrollcommand=self.scrollbar.set,
+                             bg="green") 
         self.canvas.grid(row=0, column=0, sticky=N+S+E+W) 
 
         self.scrollbar.config(command=self.canvas.yview)
@@ -103,6 +110,8 @@ class AutoScrollbarApp(Frame):
             tmp.pack()
             self.interior.update_idletasks()
             tmp.destroy()
+        self.count=0
+            
 # Creating class AutoScrollbar 
 class AutoScrollbar(Scrollbar): 
 	
@@ -141,7 +150,7 @@ class TestFrame(Frame):
                         sticky=N+S) 
         self.canvas = Canvas(self, 
 				yscrollcommand=self.scrollbar.set, 
-				) 
+				width=150) 
 
         self.canvas.grid(row=0, column=0, sticky=N+S+E+W) 
 
@@ -175,8 +184,16 @@ class TestFrame(Frame):
     
 def add_sth(app: ScrollbarApp):
 
-    btn = Button(app.interior,text="test")
-    btn.grid(row=app.count)
+    btn = Label(app.interior,text="test",bg="white",width=50)
+    text = Text(app.interior,bg="white",width=50,height=1)
+    text.tag_configure("up", foreground="green")
+    text.tag_configure("down", foreground="red")
+    text.tag_configure("event", foreground="black")
+    text.insert("end", "Compter ", "event")
+    text.insert("end", "deal card", "down")
+    
+    text.grid(row=app.count,column=1,pady=3,padx=3)
+    #btn.grid(row=app.count,column=1,pady=3,padx=3)
     app.count+=1
     
     #update_idletasks is necessary to call before move
@@ -210,7 +227,7 @@ if __name__ == "__main__":
     root=Tk()
     root.geometry("200x600")
     app = AutoScrollbarApp(root)
-    app.pack(fill=BOTH,expand=1)
+    app.pack(fill="both",expand=1)
     
     button = Button(root,text="ADD_SOMETHING",command= lambda:add_sth(app))
     button.pack()

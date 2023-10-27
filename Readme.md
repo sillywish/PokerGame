@@ -1,6 +1,5 @@
 # Pokergame
-## deverlopment log
-### basic rummy bot logic
+## basic rummy bot logic
     **drawcard state**: 
     evaluate the card from discard pile 
     if card can be set or run with hand 
@@ -21,7 +20,7 @@
     setpoint : has same set cards 10 point
     runpoint : etc (9,10) pair 20 point , etc (7,9) 10 point 
                because A and K is the bounder so only get 10 point and 0 point
-
+## deverlopment log
 ## 2023 10/12 
 修改PlayerFrame 添加了生成复杂手牌的功能，优化了之前的功能函数
 生成CardLabel和CardState类 完成纸牌的一些事件操作
@@ -76,4 +75,19 @@ tkinter 没有自带滚动条的Frame 因此创建了AutoScrollbar,AutoScrollbar
 修复了一些选择卡时的BUG
 
 ## 2023 10/27
-!!!!进行最后的UI调整
+在每次开始发牌阶段 每次抽牌主动刷新界面 提升用户视觉体验
+优化了各种加载的流畅度 减少到最小的视觉影响
+添加了剩余卡牌的统计的功能 可以实时看到抽牌堆和弃牌堆的卡牌数量
+调整了整体窗口的布局，更改了各个区域的大小
+将UI各种属性大小参数整合在config.py中
+重新使用autoscrollapp 创建messagebox 并用不同颜色文字显示消息
+
+!!!！卡牌游戏RUMMY 暂时完成告一段落 -> 体验游戏直接运行Rummy.py
+### 可以优化列表
+ 重构一些类和方法 减少代码的重复和耦合
+ 提升电脑AI算法 使其可以参考MELD列表打出的牌进行丢牌的评估
+ 提升用户交互体验 在MESSAGEBOX 加入玩家打出牌的信息
+ 提升用户交互体验 解决MELD列表过长问题
+ 提升用户交互体验 如果有LAYOUT的卡可以更加明显的提示
+ ....
+ 

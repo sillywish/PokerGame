@@ -62,6 +62,11 @@ class Card:
         else:
             return "card"
     
+    def __str__(self) -> str:
+        if self.show:
+            return f"{self.symbol}"
+        else:
+            return "card"
     
     def __eq__(self, other) -> bool:
         if self.symbol == other.symbol:
@@ -467,6 +472,8 @@ class PokerGameState(Enum):
 class RummyGameState(Enum):
     DRAWCARD = auto()
     PLAYING = auto()
+    MELD = auto()
+    LAYOUT = auto()
     DISCARD = auto()
     GOOUT = auto()
     INIT = auto()
@@ -1042,8 +1049,6 @@ def cal_run_point(card: Card,cards:set[Card]) -> int:
         #if card is A or K the point reduce to 10 and 5
         if card.value == 13:
             return 5 
-        elif card.value == 1:
-            return 10
         
         # print(temp_card,p_temp_card)
         return 20
@@ -1057,7 +1062,7 @@ def cal_run_point(card: Card,cards:set[Card]) -> int:
         
     if temp_card in temp_cards or p_temp_card in temp_cards:
         #if card is A or K the point reduce to 10 and 5
-        if card.value == 13 or card.value == 1:
+        if card.value == 13:
             return 0      
         return 10
 
@@ -1130,6 +1135,21 @@ def binary_search(target: int,arr: list) -> int | None:
         else:
             return mid
     return None    
+
+
+"""my_decorator"""
+       
+def timer_func(func):
+# This function shows the execution time of 
+# the function object passed
+    def wrap_func(*args, **kwargs):
+        t1 = time()
+        result = func(*args, **kwargs)
+        t2 = time()
+        print(f'Function {func.__name__!r} executed in {(t2-t1):.4f}s')
+        
+        return result
+    return wrap_func
        
 if __name__ == "__main__":
 
