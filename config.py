@@ -49,7 +49,7 @@ DEFAULT_SIZE=FrameSize(
         card_frame_height = 230,
         card_frame_bg = "green",
         card_size = (150,218),
-        card_gap = 30,
+        card_gap =40,
         card_top_gap = 15, 
         title_font = ("courier", 15)      
     )

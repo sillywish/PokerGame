@@ -395,8 +395,8 @@ class RummyGame(tk.Frame):
         print(discard)
         #self.update_messagebox(f"discard {discard}")
         self.update_messagebox(f"{discard}",state=RummyGameState.DISCARD)
-        self.frame_list['stock_frame'].create_discard_label(discard)
         self.frame_list['stock_frame'].deck.cards.append(discard)
+        self.frame_list['stock_frame'].create_discard_label(discard)
         self.frame_list["computer_frame"].destroy_card_by_index([discard_index])
         self.frame_list["computer_frame"].reposition()
     

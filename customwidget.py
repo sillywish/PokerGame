@@ -416,7 +416,7 @@ class DeckFrame(Frame):
         self.stock_title.config(text=f"Card remain : {self.topcard_position+1}")
     
     def update_discard_titles(self):
-        self.discard_title.config(text=f"Card remain : {self.deck.num_of_crads()-self.topcard_position-1}")
+        self.discard_title.config(text=f"Card remain : {len(self.deck.img_labels)-self.topcard_position-1}")
                 
     def reset_deck(self):
         """reset deck and clear stock and discard pile"""
